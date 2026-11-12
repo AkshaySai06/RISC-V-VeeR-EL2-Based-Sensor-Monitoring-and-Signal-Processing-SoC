@@ -1,0 +1,237 @@
+Command: /home/student/Documents/akshay_honours/Honours_project/soc_uvm/sim/./simv_soc_uvm +UVM_TESTNAME=timer_test -l timer_test_run.log
+Chronologic VCS simulator copyright 1991-2023
+Contains Synopsys proprietary information.
+Compiler version U-2023.03_Full64; Runtime version U-2023.03_Full64;  Nov  7 16:00 2026
+UVM_INFO /home/student/snps_tools_target/vcs/U-2023.03/etc/uvm-1.2/base/uvm_root.svh(402) @ 0: reporter [UVM/RELNOTES] 
+----------------------------------------------------------------
+UVM-1.2.Synopsys
+(C) 2007-2014 Mentor Graphics Corporation
+(C) 2007-2014 Cadence Design Systems, Inc.
+(C) 2006-2014 Synopsys, Inc.
+(C) 2011-2013 Cypress Semiconductor Corp.
+(C) 2013-2014 NVIDIA Corporation
+----------------------------------------------------------------
+
+  ***********       IMPORTANT RELEASE NOTES         ************
+
+  You are using a version of the UVM library that has been compiled
+  with `UVM_NO_DEPRECATED undefined.
+  See http://www.eda.org/svdb/view.php?id=3313 for more details.
+
+  You are using a version of the UVM library that has been compiled
+  with `UVM_OBJECT_DO_NOT_NEED_CONSTRUCTOR undefined.
+  See http://www.eda.org/svdb/view.php?id=3770 for more details.
+
+      (Specify +UVM_NO_RELNOTES to turn off this notice)
+
+
+Warning-[STASKW_CO] Cannot open file
+../tb/tb_soc_uvm_top.sv, 110
+  The file '../sw/main.hex' could not be opened. No such file or directory.
+  Please ensure that the file exists with proper permissions.
+
+UVM_INFO ../tb/tb_soc_uvm_top.sv(121) @ 0: reporter [TB] Preloading IMEM from ../../sw/main.hex ...
+UVM_INFO ../tb/tb_soc_uvm_top.sv(123) @ 0: reporter [TB] IMEM preload complete.
+UVM_INFO @ 0: reporter [RNTST] Running test timer_test...
+UVM_INFO ../tb/tb_soc_uvm_top.sv(366) @ 0: reporter [TB_WAVE] Recording waveforms to uart_verification.vpd and uart_verification.vcd...
+VCD+ Writer U-2023.03_Full64 Copyright (c) 1991-2023 by Synopsys Inc.
+UVM_INFO ../soc_uvm_env/soc_test.sv(57) @ 0: uvm_test_top [SOC_TEST] soc_test build_phase complete: config retrieved, env created.
+UVM_INFO ../soc_uvm_env/soc_env.sv(79) @ 0: uvm_test_top.env [SOC_ENV] SoC UVM Environment built: 6 VIP agents + virtual sequencer.
+UVM_INFO ../soc_uvm_env/soc_virtual_sequencer.sv(30) @ 0: uvm_test_top.env.v_seqr [SOC_VSEQR] SoC Virtual Sequencer created.
+UVM_INFO ../soc_uvm_env/soc_env.sv(125) @ 0: uvm_test_top.env [SOC_ENV] connect_phase: VIP sequencers and virtual interfaces connected successfully.
+UVM_INFO /home/student/snps_tools_target/vcs/U-2023.03/etc/uvm-1.2/base/uvm_root.svh(589) @ 0: reporter [UVMTOP] UVM testbench topology:
+--------------------------------------------------------------
+Name                       Type                    Size  Value
+--------------------------------------------------------------
+uvm_test_top               timer_test              -     @402 
+  env                      soc_env                 -     @434 
+    fir_agent              fir_vip_agent           -     @491 
+      drv                  fir_vip_driver          -     @660 
+        rsp_port           uvm_analysis_port       -     @679 
+        seq_item_port      uvm_seq_item_pull_port  -     @669 
+      mon                  fir_vip_monitor         -     @689 
+        ap                 uvm_analysis_port       -     @698 
+      seqr                 fir_vip_sequencer       -     @708 
+        rsp_export         uvm_analysis_export     -     @717 
+        seq_item_export    uvm_seq_item_pull_imp   -     @835 
+        arbitration_queue  array                   0     -    
+        lock_queue         array                   0     -    
+        num_last_reqs      integral                32    'd1  
+        num_last_rsps      integral                32    'd1  
+    gpio_agent             gpio_vip_agent          -     @464 
+      drv                  gpio_vip_driver         -     @890 
+        rsp_port           uvm_analysis_port       -     @909 
+        seq_item_port      uvm_seq_item_pull_port  -     @899 
+      mon                  gpio_vip_monitor        -     @852 
+        ap                 uvm_analysis_port       -     @861 
+      sb                   gpio_vip_scoreboard     -     @871 
+        mon_export         uvm_analysis_imp_mon    -     @880 
+      seqr                 gpio_vip_sequencer      -     @919 
+        rsp_export         uvm_analysis_export     -     @928 
+        seq_item_export    uvm_seq_item_pull_imp   -     @1046
+        arbitration_queue  array                   0     -    
+        lock_queue         array                   0     -    
+        num_last_reqs      integral                32    'd1  
+        num_last_rsps      integral                32    'd1  
+    i2c_agent              i2c_vip_agent           -     @473 
+      drv                  i2c_vip_driver          -     @1061
+        rsp_port           uvm_analysis_port       -     @1080
+        seq_item_port      uvm_seq_item_pull_port  -     @1070
+      mon                  i2c_vip_monitor         -     @1090
+        ap                 uvm_analysis_port       -     @1099
+      seqr                 i2c_vip_sequencer       -     @1109
+        rsp_export         uvm_analysis_export     -     @1118
+        seq_item_export    uvm_seq_item_pull_imp   -     @1236
+        arbitration_queue  array                   0     -    
+        lock_queue         array                   0     -    
+        num_last_reqs      integral                32    'd1  
+        num_last_rsps      integral                32    'd1  
+    pwm_agent              pwm_vip_agent           -     @500 
+      drv                  pwm_vip_driver          -     @1251
+        rsp_port           uvm_analysis_port       -     @1270
+        seq_item_port      uvm_seq_item_pull_port  -     @1260
+      mon                  pwm_vip_monitor         -     @1280
+        ap                 uvm_analysis_port       -     @1289
+      seqr                 pwm_vip_sequencer       -     @1299
+        rsp_export         uvm_analysis_export     -     @1308
+        seq_item_export    uvm_seq_item_pull_imp   -     @1426
+        arbitration_queue  array                   0     -    
+        lock_queue         array                   0     -    
+        num_last_reqs      integral                32    'd1  
+        num_last_rsps      integral                32    'd1  
+    timer_agent            timer_vip_agent         -     @482 
+      mon                  timer_vip_monitor       -     @1443
+        ap                 uvm_analysis_port       -     @1452
+      sb                   timer_vip_scoreboard    -     @1462
+        mon_export         uvm_analysis_imp_mon    -     @1471
+    uart_agent             uart_vip_agent          -     @455 
+      drv                  uart_vip_driver         -     @1521
+        rsp_port           uvm_analysis_port       -     @1540
+        seq_item_port      uvm_seq_item_pull_port  -     @1530
+      mon                  uart_vip_monitor        -     @1483
+        ap                 uvm_analysis_port       -     @1492
+      sb                   uart_vip_scoreboard     -     @1502
+        mon_export         uvm_analysis_imp        -     @1511
+      seqr                 uart_vip_sequencer      -     @1550
+        rsp_export         uvm_analysis_export     -     @1559
+        seq_item_export    uvm_seq_item_pull_imp   -     @1677
+        arbitration_queue  array                   0     -    
+        lock_queue         array                   0     -    
+        num_last_reqs      integral                32    'd1  
+        num_last_rsps      integral                32    'd1  
+    v_seqr                 soc_virtual_sequencer   -     @509 
+      rsp_export           uvm_analysis_export     -     @518 
+      seq_item_export      uvm_seq_item_pull_imp   -     @636 
+      arbitration_queue    array                   0     -    
+      lock_queue           array                   0     -    
+      num_last_reqs        integral                32    'd1  
+      num_last_rsps        integral                32    'd1  
+--------------------------------------------------------------
+
+UVM_INFO ../../tb/vip/uart_vip_uvm_tb/uart_vip_driver.sv(35) @ 0: uvm_test_top.env.uart_agent.drv [uart_vip_driver] Waiting for reset release...
+UVM_INFO ../soc_uvm_env/timer_test.sv(25) @ 0: uvm_test_top [timer_test] ====================================================================
+UVM_INFO ../soc_uvm_env/timer_test.sv(26) @ 0: uvm_test_top [timer_test]   STARTING TIMER VERIFICATION TEST (Phase 3 End-to-End Verification)
+UVM_INFO ../soc_uvm_env/timer_test.sv(27) @ 0: uvm_test_top [timer_test] ====================================================================
+UVM_INFO ../soc_uvm_env/timer_test.sv(30) @ 0: uvm_test_top [timer_test] Waiting for SoC reset deassertion...
+UVM_INFO ../tb/tb_soc_uvm_top.sv(56) @ 410000: reporter [TB] Reset deasserted. soc_dut running.
+UVM_INFO ../../tb/vip/timer_vip_uvm_tb/timer_vip_monitor.sv(36) @ 430000: uvm_test_top.env.timer_agent.mon [timer_vip_monitor] Timer VIP Monitor active.
+UVM_INFO ../../tb/vip/timer_vip_uvm_tb/timer_vip_scoreboard.sv(42) @ 430000: uvm_test_top.env.timer_agent.sb [timer_vip_scoreboard] [MATCH] Timer Reset State Verified: mtime=0, mtimecmp=0xFFFFFFFFFFFFFFFF, prescale=49
+UVM_INFO ../../tb/vip/gpio_vip_uvm_tb/gpio_vip_driver.sv(32) @ 430000: uvm_test_top.env.gpio_agent.drv [gpio_vip_driver] GPIO VIP Driver initialized and ready.
+UVM_INFO ../../tb/vip/gpio_vip_uvm_tb/gpio_vip_monitor.sv(36) @ 430000: uvm_test_top.env.gpio_agent.mon [gpio_vip_monitor] GPIO VIP Monitor active.
+UVM_INFO ../../tb/vip/uart_vip_uvm_tb/uart_vip_driver.sv(38) @ 810000: uvm_test_top.env.uart_agent.drv [uart_vip_driver] Reset released. Driver ready.
+UVM_INFO ../../tb/vip/uart_vip_uvm_tb/uart_vip_monitor.sv(36) @ 810000: uvm_test_top.env.uart_agent.mon [uart_vip_monitor] Reset released. Monitor active.
+UVM_INFO ../soc_uvm_env/timer_test.sv(33) @ 2410000: uvm_test_top [timer_test] Reset released. CPU and Timer peripheral active.
+UVM_INFO ../soc_uvm_env/timer_test.sv(37) @ 2410000: uvm_test_top [timer_test] Observing Timer counter progression and cadence rate...
+UVM_INFO ../soc_uvm_env/timer_test.sv(41) @ 38410000: uvm_test_top [timer_test] Checking Timer Verification Results...
+UVM_INFO ../soc_uvm_env/timer_test.sv(51) @ 38410000: uvm_test_top [timer_test] 
+========================================================================
+ [TIMER VERIFICATION SIGN-OFF: SUCCESS]
+  Test Name           : timer_test
+  Counter Bits        : 64-bit (mtime & mtimecmp)
+  Prescaler Value     : 49 (50 clock cycles = 1.00 us @ 50 MHz)
+  Cadence Verified    : PASS (Exact 50 cycles per tick)
+  Monotonic Count     : PASS (Sequential increments)
+  Scoreboard Matches  : 113 Matches (0 Mismatches)
+  Overall Status      : TEST PASSED
+========================================================================
+UVM_INFO /home/student/snps_tools_target/vcs/U-2023.03/etc/uvm-1.2/base/uvm_objection.svh(1276) @ 38910000: reporter [TEST_DONE] 'run' phase is ready to proceed to the 'extract' phase
+UVM_INFO ../../tb/vip/gpio_vip_uvm_tb/gpio_vip_scoreboard.sv(98) @ 38910000: uvm_test_top.env.gpio_agent.sb [gpio_vip_scoreboard] 
++=============================================================+
+|                   GPIO SCOREBOARD SUMMARY                   |
++=============================================================+
+| Total Checks Evaluated      : 2                   |
+| Total Matches               : 0                   |
+| Total Mismatches            : 0                   |
+| Output Direction Verified   : NOT OBSERVED        |
+| Output Data Pattern Verified: NOT OBSERVED        |
+| Input Stimulus & Sampling   : NOT OBSERVED        |
++=============================================================+
+UVM_INFO ../../tb/vip/gpio_vip_uvm_tb/gpio_vip_scoreboard.sv(104) @ 38910000: uvm_test_top.env.gpio_agent.sb [gpio_vip_scoreboard] GPIO Scoreboard: No active transactions driven (idle / other peripheral test).
+UVM_INFO ../../tb/vip/timer_vip_uvm_tb/timer_vip_scoreboard.sv(107) @ 38910000: uvm_test_top.env.timer_agent.sb [timer_vip_scoreboard] 
++=============================================================+
+|                   TIMER SCOREBOARD SUMMARY                  |
++=============================================================+
+| Total Checks Evaluated      : 39                  |
+| Total Matches               : 116                 |
+| Total Mismatches            : 0                   |
+| Reset State Verified        : PASS (Default Regs) |
+| 1 MHz Cadence Rate Verified : PASS (50 cycles/us) |
+| Monotonic Increment Verified: PASS (mtime + 1)    |
++=============================================================+
+UVM_INFO ../../tb/vip/timer_vip_uvm_tb/timer_vip_scoreboard.sv(110) @ 38910000: uvm_test_top.env.timer_agent.sb [timer_vip_scoreboard] *** TIMER END-TO-END FUNCTIONAL VERIFICATION: PASSED (0 ERRORS) ***
+UVM_INFO ../../tb/vip/uart_vip_uvm_tb/uart_vip_scoreboard.sv(129) @ 38910000: uvm_test_top.env.uart_agent.sb [uart_vip_scoreboard] 
++-------------------------------------------------------------+
+|                   UART SCOREBOARD SUMMARY                   |
++-------------------------------------------------------------+
+| Total Transactions Received : 0                             |
+| Total Matches               : 0                             |
+| Total Mismatches            : 0                             |
++-------------------------------------------------------------+
+
+UVM_INFO ../../tb/vip/uart_vip_uvm_tb/uart_vip_scoreboard.sv(132) @ 38910000: uvm_test_top.env.uart_agent.sb [uart_vip_scoreboard] UART Scoreboard: No transactions received (idle / integration construction check).
+UVM_INFO /home/student/snps_tools_target/vcs/U-2023.03/etc/uvm-1.2/base/uvm_report_catcher.svh(705) @ 38910000: reporter [UVM/REPORT/CATCHER] 
+--- UVM Report catcher Summary ---
+
+
+Number of demoted UVM_FATAL reports  :    0
+Number of demoted UVM_ERROR reports  :    0
+Number of demoted UVM_WARNING reports:    0
+Number of caught UVM_FATAL reports   :    0
+Number of caught UVM_ERROR reports   :    0
+Number of caught UVM_WARNING reports :    0
+
+UVM_INFO /home/student/snps_tools_target/vcs/U-2023.03/etc/uvm-1.2/base/uvm_report_server.svh(904) @ 38910000: reporter [UVM/REPORT/SERVER] 
+--- UVM Report Summary ---
+
+** Report counts by severity
+UVM_INFO :   34
+UVM_WARNING :    0
+UVM_ERROR :    0
+UVM_FATAL :    0
+** Report counts by id
+[RNTST]     1
+[SOC_ENV]     2
+[SOC_TEST]     1
+[SOC_VSEQR]     1
+[TB]     3
+[TB_WAVE]     1
+[TEST_DONE]     1
+[UVM/RELNOTES]     1
+[UVM/REPORT/CATCHER]     1
+[UVMTOP]     1
+[gpio_vip_driver]     1
+[gpio_vip_monitor]     1
+[gpio_vip_scoreboard]     2
+[timer_test]     8
+[timer_vip_monitor]     1
+[timer_vip_scoreboard]     3
+[uart_vip_driver]     2
+[uart_vip_monitor]     1
+[uart_vip_scoreboard]     2
+
+$finish called from file "/home/student/snps_tools_target/vcs/U-2023.03/etc/uvm-1.2/base/uvm_root.svh", line 527.
+$finish at simulation time             38910000
+           V C S   S i m u l a t i o n   R e p o r t 
+Time: 38910000 ps
+CPU Time:      0.630 seconds;       Data structure size:   1.7Mb
+Sat Nov  7 16:00:52 2026

@@ -1,0 +1,80 @@
+# SPDX-License-Identifier: Apache-2.0
+# Synopsys VCS Makefile for VeeR EL2 SoC Simulation
+
+export VCS_HOME            ?= /home/student/snps_tools_target/vcs/U-2023.03
+export VERDI_HOME          ?= /home/student/snps_tools_target/verdi/U-2023.03-SP1
+export PATH                := $(VCS_HOME)/bin:$(VERDI_HOME)/bin:$(PATH)
+export SNPSLMD_LICENSE_FILE ?= 27021@14.139.1.126
+
+VCS          = vcs
+VCS_FLAGS    = -full64 -sverilog -timescale=1ns/1ps -assert svaext +lint=none -debug_access+all
+VERDI_FLAGS  = -kdb -P $(VERDI_HOME)/share/PLI/VCS/linux64/novas.tab $(VERDI_HOME)/share/PLI/VCS/linux64/pli.a
+SIMV         = ./simv
+
+UNIT_TBS = tb_axi4lite_regif tb_axi4lite_err_slave tb_axi4_to_axi4lite tb_axi4lite_interconnect tb_axi4lite_sram tb_uart tb_timer tb_gpio tb_i2c tb_fir tb_pwm
+
+.PHONY: all unit unit_all sim clean
+
+all: sim
+
+# -----------------------------------------------------------------------------
+# Run a specific Unit Testbench: make -f Makefile.vcs unit TB=tb_fir
+# -----------------------------------------------------------------------------
+TB ?= tb_fir
+unit:
+	@echo "=========================================================="
+	@echo " Compiling and Running Unit Test: $(TB)"
+	@echo "=========================================================="
+	$(VCS) $(VCS_FLAGS) -f filelist_unit.f ../tb/unit/$(TB).sv -o simv_$(TB)
+	./simv_$(TB) -l $(TB).log
+
+# -----------------------------------------------------------------------------
+# Run all Unit Testbenches sequentially
+# -----------------------------------------------------------------------------
+unit_all:
+	@echo "Running all $(words $(UNIT_TBS)) unit testbenches..."
+	@for tb in $(UNIT_TBS); do \
+		echo "----------------------------------------------------------"; \
+		echo " [RUN] $$tb"; \
+		$(VCS) $(VCS_FLAGS) -f filelist_unit.f ../tb/unit/$$tb.sv -o simv_$$tb > /dev/null 2>&1 || exit 1; \
+		./simv_$$tb | grep -E "PASS|FAIL|==="; \
+	done
+	@echo "=========================================================="
+	@echo " All Unit Tests Completed!"
+	@echo "=========================================================="
+
+# -----------------------------------------------------------------------------
+# Run Full SoC Simulation: make -f Makefile.vcs sim
+# -----------------------------------------------------------------------------
+sim:
+	@echo "=========================================================="
+	@echo " Compiling Full VeeR EL2 SoC Simulation (tb_soc_top)"
+	@echo "=========================================================="
+	$(VCS) $(VCS_FLAGS) $(VERDI_FLAGS) -f filelist_soc.f -o simv_soc
+	@echo "=========================================================="
+	@echo " Running Full SoC Simulation..."
+	@echo "=========================================================="
+	./simv_soc +HEX_FILE=../sw/main.hex -l soc_sim.log
+
+# -----------------------------------------------------------------------------
+# Generate Verdi FSDB Waveforms: make -f Makefile.vcs verdi_dump
+# -----------------------------------------------------------------------------
+verdi_dump:
+	@echo "=========================================================="
+	@echo " Compiling and Generating Verdi FSDB Waveforms..."
+	@echo "=========================================================="
+	$(VCS) $(VCS_FLAGS) $(VERDI_FLAGS) -f filelist_soc.f -o simv_soc
+	./simv_soc +HEX_FILE=../sw/main.hex +FSDB -l soc_verdi.log
+	@echo "=========================================================="
+	@echo " FSDB waveform generated: sim/soc_top.fsdb"
+	@echo "=========================================================="
+
+# -----------------------------------------------------------------------------
+# Open Waveforms in Verdi GUI: make -f Makefile.vcs verdi_gui
+# -----------------------------------------------------------------------------
+verdi_gui:
+	verdi -ssf soc_top.fsdb -dbdir simv_soc.daidir &
+
+clean:
+	rm -rf simv* csrc *.daidir ucli.key vc_hdrs.h *.log *.vcd *.vpd *.fsdb* novas.* verdi* DVEfiles
+

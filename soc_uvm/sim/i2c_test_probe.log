@@ -1,0 +1,221 @@
+Command: /home/student/Documents/akshay_honours/Honours_project/soc_uvm/sim/./simv_soc_uvm +UVM_TESTNAME=i2c_test -l i2c_test_probe.log
+Chronologic VCS simulator copyright 1991-2023
+Contains Synopsys proprietary information.
+Compiler version U-2023.03_Full64; Runtime version U-2023.03_Full64;  Nov  7 16:23 2026
+UVM_INFO /home/student/snps_tools_target/vcs/U-2023.03/etc/uvm-1.2/base/uvm_root.svh(402) @ 0: reporter [UVM/RELNOTES] 
+----------------------------------------------------------------
+UVM-1.2.Synopsys
+(C) 2007-2014 Mentor Graphics Corporation
+(C) 2007-2014 Cadence Design Systems, Inc.
+(C) 2006-2014 Synopsys, Inc.
+(C) 2011-2013 Cypress Semiconductor Corp.
+(C) 2013-2014 NVIDIA Corporation
+----------------------------------------------------------------
+
+  ***********       IMPORTANT RELEASE NOTES         ************
+
+  You are using a version of the UVM library that has been compiled
+  with `UVM_NO_DEPRECATED undefined.
+  See http://www.eda.org/svdb/view.php?id=3313 for more details.
+
+  You are using a version of the UVM library that has been compiled
+  with `UVM_OBJECT_DO_NOT_NEED_CONSTRUCTOR undefined.
+  See http://www.eda.org/svdb/view.php?id=3770 for more details.
+
+      (Specify +UVM_NO_RELNOTES to turn off this notice)
+
+
+Warning-[STASKW_CO] Cannot open file
+../tb/tb_soc_uvm_top.sv, 111
+  The file '../sw/main.hex' could not be opened. No such file or directory.
+  Please ensure that the file exists with proper permissions.
+
+UVM_INFO ../tb/tb_soc_uvm_top.sv(122) @ 0: reporter [TB] Preloading IMEM from ../../sw/main.hex ...
+UVM_INFO ../tb/tb_soc_uvm_top.sv(124) @ 0: reporter [TB] IMEM preload complete.
+UVM_INFO @ 0: reporter [RNTST] Running test i2c_test...
+UVM_INFO ../tb/tb_soc_uvm_top.sv(373) @ 0: reporter [TB_WAVE] Recording waveforms to uart_verification.vpd and uart_verification.vcd...
+VCD+ Writer U-2023.03_Full64 Copyright (c) 1991-2023 by Synopsys Inc.
+UVM_INFO ../soc_uvm_env/soc_test.sv(57) @ 0: uvm_test_top [SOC_TEST] soc_test build_phase complete: config retrieved, env created.
+UVM_INFO ../soc_uvm_env/soc_env.sv(79) @ 0: uvm_test_top.env [SOC_ENV] SoC UVM Environment built: 6 VIP agents + virtual sequencer.
+UVM_INFO ../soc_uvm_env/soc_virtual_sequencer.sv(30) @ 0: uvm_test_top.env.v_seqr [SOC_VSEQR] SoC Virtual Sequencer created.
+UVM_INFO ../soc_uvm_env/soc_env.sv(126) @ 0: uvm_test_top.env [SOC_ENV] connect_phase: VIP sequencers and virtual interfaces connected successfully.
+UVM_INFO /home/student/snps_tools_target/vcs/U-2023.03/etc/uvm-1.2/base/uvm_root.svh(589) @ 0: reporter [UVMTOP] UVM testbench topology:
+--------------------------------------------------------------
+Name                       Type                    Size  Value
+--------------------------------------------------------------
+uvm_test_top               i2c_test                -     @402 
+  env                      soc_env                 -     @434 
+    fir_agent              fir_vip_agent           -     @491 
+      drv                  fir_vip_driver          -     @660 
+        rsp_port           uvm_analysis_port       -     @679 
+        seq_item_port      uvm_seq_item_pull_port  -     @669 
+      mon                  fir_vip_monitor         -     @689 
+        ap                 uvm_analysis_port       -     @698 
+      seqr                 fir_vip_sequencer       -     @708 
+        rsp_export         uvm_analysis_export     -     @717 
+        seq_item_export    uvm_seq_item_pull_imp   -     @835 
+        arbitration_queue  array                   0     -    
+        lock_queue         array                   0     -    
+        num_last_reqs      integral                32    'd1  
+        num_last_rsps      integral                32    'd1  
+    gpio_agent             gpio_vip_agent          -     @464 
+      drv                  gpio_vip_driver         -     @890 
+        rsp_port           uvm_analysis_port       -     @909 
+        seq_item_port      uvm_seq_item_pull_port  -     @899 
+      mon                  gpio_vip_monitor        -     @852 
+        ap                 uvm_analysis_port       -     @861 
+      sb                   gpio_vip_scoreboard     -     @871 
+        mon_export         uvm_analysis_imp_mon    -     @880 
+      seqr                 gpio_vip_sequencer      -     @919 
+        rsp_export         uvm_analysis_export     -     @928 
+        seq_item_export    uvm_seq_item_pull_imp   -     @1046
+        arbitration_queue  array                   0     -    
+        lock_queue         array                   0     -    
+        num_last_reqs      integral                32    'd1  
+        num_last_rsps      integral                32    'd1  
+    i2c_agent              i2c_vip_agent           -     @473 
+      mon                  i2c_vip_monitor         -     @1063
+        ap                 uvm_analysis_port       -     @1072
+      sb                   i2c_vip_scoreboard      -     @1082
+        mon_export         uvm_analysis_imp_mon    -     @1091
+    pwm_agent              pwm_vip_agent           -     @500 
+      drv                  pwm_vip_driver          -     @1101
+        rsp_port           uvm_analysis_port       -     @1120
+        seq_item_port      uvm_seq_item_pull_port  -     @1110
+      mon                  pwm_vip_monitor         -     @1130
+        ap                 uvm_analysis_port       -     @1139
+      seqr                 pwm_vip_sequencer       -     @1149
+        rsp_export         uvm_analysis_export     -     @1158
+        seq_item_export    uvm_seq_item_pull_imp   -     @1276
+        arbitration_queue  array                   0     -    
+        lock_queue         array                   0     -    
+        num_last_reqs      integral                32    'd1  
+        num_last_rsps      integral                32    'd1  
+    timer_agent            timer_vip_agent         -     @482 
+      mon                  timer_vip_monitor       -     @1293
+        ap                 uvm_analysis_port       -     @1302
+      sb                   timer_vip_scoreboard    -     @1312
+        mon_export         uvm_analysis_imp_mon    -     @1321
+    uart_agent             uart_vip_agent          -     @455 
+      drv                  uart_vip_driver         -     @1371
+        rsp_port           uvm_analysis_port       -     @1390
+        seq_item_port      uvm_seq_item_pull_port  -     @1380
+      mon                  uart_vip_monitor        -     @1333
+        ap                 uvm_analysis_port       -     @1342
+      sb                   uart_vip_scoreboard     -     @1352
+        mon_export         uvm_analysis_imp        -     @1361
+      seqr                 uart_vip_sequencer      -     @1400
+        rsp_export         uvm_analysis_export     -     @1409
+        seq_item_export    uvm_seq_item_pull_imp   -     @1527
+        arbitration_queue  array                   0     -    
+        lock_queue         array                   0     -    
+        num_last_reqs      integral                32    'd1  
+        num_last_rsps      integral                32    'd1  
+    v_seqr                 soc_virtual_sequencer   -     @509 
+      rsp_export           uvm_analysis_export     -     @518 
+      seq_item_export      uvm_seq_item_pull_imp   -     @636 
+      arbitration_queue    array                   0     -    
+      lock_queue           array                   0     -    
+      num_last_reqs        integral                32    'd1  
+      num_last_rsps        integral                32    'd1  
+--------------------------------------------------------------
+
+UVM_INFO ../../tb/vip/uart_vip_uvm_tb/uart_vip_driver.sv(35) @ 0: uvm_test_top.env.uart_agent.drv [uart_vip_driver] Waiting for reset release...
+UVM_INFO ../soc_uvm_env/i2c_test.sv(27) @ 0: uvm_test_top [i2c_test] ====================================================================
+UVM_INFO ../soc_uvm_env/i2c_test.sv(28) @ 0: uvm_test_top [i2c_test]    STARTING I2C VERIFICATION TEST (Phase 3 End-to-End Verification) 
+UVM_INFO ../soc_uvm_env/i2c_test.sv(29) @ 0: uvm_test_top [i2c_test] ====================================================================
+UVM_INFO ../soc_uvm_env/i2c_test.sv(32) @ 0: uvm_test_top [i2c_test] Waiting for SoC reset deassertion...
+UVM_INFO ../tb/tb_soc_uvm_top.sv(57) @ 410000: reporter [TB] Reset deasserted. soc_dut running.
+UVM_INFO ../../tb/vip/timer_vip_uvm_tb/timer_vip_monitor.sv(36) @ 430000: uvm_test_top.env.timer_agent.mon [timer_vip_monitor] Timer VIP Monitor active.
+UVM_INFO ../../tb/vip/timer_vip_uvm_tb/timer_vip_scoreboard.sv(42) @ 430000: uvm_test_top.env.timer_agent.sb [timer_vip_scoreboard] [MATCH] Timer Reset State Verified: mtime=0, mtimecmp=0xFFFFFFFFFFFFFFFF, prescale=49
+UVM_INFO ../../tb/vip/i2c_vip_uvm_tb/i2c_vip_monitor.sv(37) @ 430000: uvm_test_top.env.i2c_agent.mon [i2c_vip_monitor] I2C VIP Monitor active.
+UVM_INFO ../../tb/vip/gpio_vip_uvm_tb/gpio_vip_driver.sv(32) @ 430000: uvm_test_top.env.gpio_agent.drv [gpio_vip_driver] GPIO VIP Driver initialized and ready.
+UVM_INFO ../../tb/vip/gpio_vip_uvm_tb/gpio_vip_monitor.sv(36) @ 430000: uvm_test_top.env.gpio_agent.mon [gpio_vip_monitor] GPIO VIP Monitor active.
+UVM_INFO ../../tb/vip/uart_vip_uvm_tb/uart_vip_driver.sv(38) @ 810000: uvm_test_top.env.uart_agent.drv [uart_vip_driver] Reset released. Driver ready.
+UVM_INFO ../../tb/vip/uart_vip_uvm_tb/uart_vip_monitor.sv(36) @ 810000: uvm_test_top.env.uart_agent.mon [uart_vip_monitor] Reset released. Monitor active.
+UVM_INFO ../soc_uvm_env/i2c_test.sv(35) @ 2410000: uvm_test_top [i2c_test] Reset released. CPU and I2C controller active.
+[I2C_REG_WRITE] @17410000: addr=0x0 data=0x0000007c state=0 tip=0
+[I2C_REG_WRITE] @17910000: addr=0x1 data=0x00000000 state=0 tip=0
+[I2C_REG_WRITE] @18410000: addr=0x2 data=0x00000080 state=0 tip=0
+UVM_INFO ../../tb/vip/gpio_vip_uvm_tb/gpio_vip_scoreboard.sv(44) @ 57370000: uvm_test_top.env.gpio_agent.sb [gpio_vip_scoreboard] [MATCH] GPIO Direction verified: Lower 8 pins OUTPUT, Upper 8 pins INPUT (oe=0x00FF)
+UVM_INFO ../../tb/vip/gpio_vip_uvm_tb/gpio_vip_scoreboard.sv(55) @ 59310000: uvm_test_top.env.gpio_agent.sb [gpio_vip_scoreboard] [MATCH] GPIO Output Data verified: Lower 8 pins driving 0xAA per firmware initialization
+[UART CONSOLE] 
+[I2C_REG_WRITE] @1462050000: addr=0x3 data=0x00000090 state=0 tip=0
+[I2C_REG_WRITE] @1463070000: addr=0x4 data=0x00000090 state=0 tip=0
+[I2C_REG_WRITE] @1465030000: addr=0x3 data=0x00000000 state=1 tip=1
+[I2C_REG_WRITE] @1465970000: addr=0x4 data=0x00000010 state=1 tip=1
+[I2C_REG_WRITE] @1469410000: addr=0x3 data=0x00000091 state=1 tip=1
+[I2C_REG_WRITE] @1469910000: addr=0x4 data=0x00000090 state=1 tip=1
+[I2C_REG_WRITE] @1472530000: addr=0x4 data=0x00000020 state=2 tip=1
+[I2C_REG_WRITE] @1475790000: addr=0x4 data=0x00000068 state=2 tip=1
+[UART CONSOLE] [SoC] PASS! VeeR EL2 Online
+[I2C_REG_WRITE] @4676070000: addr=0x3 data=0x00000090 state=0 tip=0
+[I2C_REG_WRITE] @4677090000: addr=0x4 data=0x00000090 state=0 tip=0
+[I2C_REG_WRITE] @4679050000: addr=0x3 data=0x00000000 state=1 tip=1
+[I2C_REG_WRITE] @4679990000: addr=0x4 data=0x00000010 state=1 tip=1
+[I2C_REG_WRITE] @4683430000: addr=0x3 data=0x00000091 state=1 tip=1
+[I2C_REG_WRITE] @4683930000: addr=0x4 data=0x00000090 state=1 tip=1
+[I2C_REG_WRITE] @4686550000: addr=0x4 data=0x00000020 state=2 tip=1
+UVM_INFO ../../tb/vip/i2c_vip_uvm_tb/i2c_vip_scoreboard.sv(42) @ 4688430000: uvm_test_top.env.i2c_agent.sb [i2c_vip_scoreboard] [MATCH] I2C Address Verified: 0x48 (Op=WRITE)
+UVM_INFO ../../tb/vip/i2c_vip_uvm_tb/i2c_vip_scoreboard.sv(65) @ 4688430000: uvm_test_top.env.i2c_agent.sb [i2c_vip_scoreboard] [MATCH] I2C Repeated START Condition Verified
+[I2C_REG_WRITE] @4689810000: addr=0x4 data=0x00000068 state=2 tip=1
+[UART CONSOLE] iter=1 | raw=0 | filt=0 | duty=500
+[I2C_REG_WRITE] @7888030000: addr=0x3 data=0x00000090 state=0 tip=0
+[I2C_REG_WRITE] @7889050000: addr=0x4 data=0x00000090 state=0 tip=0
+[I2C_REG_WRITE] @7891010000: addr=0x3 data=0x00000000 state=1 tip=1
+[I2C_REG_WRITE] @7891950000: addr=0x4 data=0x00000010 state=1 tip=1
+[I2C_REG_WRITE] @7895390000: addr=0x3 data=0x00000091 state=1 tip=1
+[I2C_REG_WRITE] @7895890000: addr=0x4 data=0x00000090 state=1 tip=1
+[I2C_REG_WRITE] @7898510000: addr=0x4 data=0x00000020 state=2 tip=1
+UVM_INFO ../../tb/vip/i2c_vip_uvm_tb/i2c_vip_scoreboard.sv(42) @ 7900930000: uvm_test_top.env.i2c_agent.sb [i2c_vip_scoreboard] [MATCH] I2C Address Verified: 0x48 (Op=WRITE)
+UVM_INFO ../../tb/vip/i2c_vip_uvm_tb/i2c_vip_scoreboard.sv(65) @ 7900930000: uvm_test_top.env.i2c_agent.sb [i2c_vip_scoreboard] [MATCH] I2C Repeated START Condition Verified
+[I2C_REG_WRITE] @7901770000: addr=0x4 data=0x00000068 state=2 tip=1
+[UART CONSOLE] iter=2 | raw=0 | filt=0 | duty=500
+UVM_FATAL ../tb/tb_soc_uvm_top.sv(385) @ 10000000000: reporter [TB_WATCHDOG] Simulation exceeded 10 ms watchdog limit — check for UVM phase hang.
+UVM_INFO /home/student/snps_tools_target/vcs/U-2023.03/etc/uvm-1.2/base/uvm_report_catcher.svh(705) @ 10000000000: reporter [UVM/REPORT/CATCHER] 
+--- UVM Report catcher Summary ---
+
+
+Number of demoted UVM_FATAL reports  :    0
+Number of demoted UVM_ERROR reports  :    0
+Number of demoted UVM_WARNING reports:    0
+Number of caught UVM_FATAL reports   :    0
+Number of caught UVM_ERROR reports   :    0
+Number of caught UVM_WARNING reports :    0
+
+UVM_INFO /home/student/snps_tools_target/vcs/U-2023.03/etc/uvm-1.2/base/uvm_report_server.svh(904) @ 10000000000: reporter [UVM/REPORT/SERVER] 
+--- UVM Report Summary ---
+
+** Report counts by severity
+UVM_INFO :   31
+UVM_WARNING :    0
+UVM_ERROR :    0
+UVM_FATAL :    1
+** Report counts by id
+[RNTST]     1
+[SOC_ENV]     2
+[SOC_TEST]     1
+[SOC_VSEQR]     1
+[TB]     3
+[TB_WATCHDOG]     1
+[TB_WAVE]     1
+[UVM/RELNOTES]     1
+[UVM/REPORT/CATCHER]     1
+[UVMTOP]     1
+[gpio_vip_driver]     1
+[gpio_vip_monitor]     1
+[gpio_vip_scoreboard]     2
+[i2c_test]     5
+[i2c_vip_monitor]     1
+[i2c_vip_scoreboard]     4
+[timer_vip_monitor]     1
+[timer_vip_scoreboard]     1
+[uart_vip_driver]     2
+[uart_vip_monitor]     1
+
+$finish called from file "/home/student/snps_tools_target/vcs/U-2023.03/etc/uvm-1.2/base/uvm_root.svh", line 135.
+$finish at simulation time          10000000000
+           V C S   S i m u l a t i o n   R e p o r t 
+Time: 10000000000 ps
+CPU Time:     57.820 seconds;       Data structure size:   1.7Mb
+Sat Nov  7 16:24:17 2026

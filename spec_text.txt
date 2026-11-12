@@ -1,0 +1,3621 @@
+RISC-V VeeR EL2 Based Sensor Monitoring and Signal
+Processing SoC
+Detailed Design & Implementation Specification (v2.0 — AXI4-Lite)
+Purpose of this document. This is a complete, self-contained implementation brief. An implementation agent should be able to read this document alone
+and produce synthesizable RTL, testbenches, firmware, and simulation scripts without asking further questions. Where a choice was open, this document
+makes the choice and marks it. Anything genuinely unresolved is collected in Section 16.
+Revision note (v2.0): The system interconnect is AXI4-Lite. AHB-Lite is not used anywhere in this design. Note that the VeeR EL2 core's native bus
+interface is full AXI4 (64-bit data, bursts, transaction IDs) — it does not speak AXI4-Lite directly. A bridge is therefore a mandatory, first-class component of
+this design, specified in Section 6.
+
+1. Introduction
+1.1 Background
+Sensor-driven embedded systems follow a recurring three-stage pattern: acquire → condition → actuate. A temperature, pressure, or inertial sensor is read
+over a serial bus; the raw samples are noisy and must be smoothed; the smoothed value is then converted into a control action such as a fan speed, a valve
+position, or a motor drive level.
+Building each of these stages as an independent, hand-wired hardware block makes the system hard to integrate and harder to verify. A programmable Systemon-Chip solves this by putting a general-purpose processor in charge of sequencing and decision-making, while dedicated hardware IPs handle the timing-critical
+or arithmetic-heavy work.
+
+1.2 What this project builds
+A medium-scale RISC-V SoC built around the VeeR EL2 core (CHIPS Alliance, formerly Western Digital SweRV EL2), with an AXI4-Lite interconnect and the
+following slaves:
+Block
+
+Role
+
+Instruction Memory (IMEM)
+
+Holds the application program
+
+Data Memory (DMEM)
+
+Stack, globals, sample buffers
+
+I²C Controller
+
+Acquires samples from an external sensor
+
+FIR Filter
+
+Low-pass conditioning of the raw sample stream
+
+PWM Generator
+
+Produces the duty-cycle-controlled actuator output
+
+UART
+
+Host console — telemetry, debug, status
+
+Timer
+
+Sampling cadence, mtime / mtimecmp , machine timer interrupt
+
+GPIO
+
+LEDs, buttons, general control lines
+
+The three bolded blocks are the custom IPs of this project. UART, Timer, and GPIO are supporting infrastructure and should be kept deliberately simple.
+
+1.3 Design goals
+1. Correctness first. Every IP gets a standalone unit testbench before it is integrated.
+2. Strict AXI4-Lite compliance. Every slave obeys VALID/READY handshake rules, never deasserts VALID before READY, keeps payload stable while VALID is
+high, and returns OKAY unless a genuine error occurs.
+3. Memory-mapped, register-driven. No IP has hidden side channels; every interaction between the processor and an IP happens through documented
+registers.
+4. Parameterized, not hardcoded. Tap count, data width, FIFO depths, and address bases are Verilog parameters.
+5. Simulation-first. The whole system must run to completion in an open-source simulator (Verilator or Icarus) with no FPGA board required.
+6. One reusable slave shim. All six peripherals share a single, verified AXI4-Lite register-interface module. Protocol bugs are then fixed once, not six times.
+
+1.4 Explicit non-goals
+No RTOS. Bare-metal C with a single main() loop.
+No cache coherency, no DMA engine, no multi-master arbitration on the peripheral bus.
+No floating point. The FIR uses fixed-point Q1.15 arithmetic.
+No physical sensor required for sign-off — a behavioural I²C sensor model in the testbench is sufficient.
+No place-and-route or timing closure. Synthesis (Yosys) as a lint/feasibility check only.
+No AXI4 exclusive access, no QoS, no regions, no out-of-order completion.
+
+1.5 Terminology
+Term
+
+Meaning
+
+Core
+
+The VeeR EL2 CPU instance ( el2_swerv_wrapper )
+
+AXI4
+
+The full protocol the core speaks: bursts, IDs, 64-bit data
+
+AXI4-Lite
+
+The simplified subset used on the SoC bus: single beat, no ID, no burst
+
+Master
+
+A block that initiates transfers. Here: IFU port, LSU port
+
+Slave
+
+A block that responds. All memories and peripherals
+
+Channel
+
+One of the five AXI channels: AW, W, B, AR, R
+
+Handshake
+
+A transfer occurs on the rising clock edge where VALID and READY are both high
+
+Q1.15
+
+Signed fixed point: 1 sign bit, 15 fractional bits; range approx. −1.0 to +0.99997
+
+DUT
+
+Design Under Test
+
+2. Design Decisions, Assumptions and Constraints
+These are binding decisions. The agent must implement them as stated.
+#
+
+Decision
+
+Value
+
+D1
+
+Core configuration
+
+VeeR EL2, AXI4 build ( -set=build_axi4 ). The core's AXI4 master ports are bridged to AXI4-Lite.
+
+D2
+
+SoC interconnect
+
+AXI4-Lite only. No AHB anywhere. Every memory and peripheral is an AXI4-Lite slave.
+
+D3
+
+ICCM / DCCM
+
+Disabled. All code and data live in external AXI4-Lite memories.
+
+D4
+
+I-cache
+
+Disabled ( -set=icache_enable=0 ). Removes most burst traffic from the IFU port.
+
+D5
+
+Bus data width
+
+Core AXI4 ports are 64-bit data. The SoC AXI4-Lite bus is 32-bit data, 32-bit address. The bridge downsizes.
+
+D6
+
+Clock
+
+Single clock domain, clk , nominal 50 MHz for simulation purposes. All logic is positive-edge triggered.
+
+D7
+
+Reset
+
+Single asynchronous-assert / synchronous-deassert, active low, named aresetn . A reset synchronizer sits at the top level.
+
+D8
+
+Endianness
+
+Little-endian (RISC-V standard)
+
+D9
+
+Peripheral access
+width
+
+All peripheral registers are 32-bit, word-aligned. A write with WSTRB != 4'hF to a peripheral register returns SLVERR . Memories honour WSTRB
+fully (byte and halfword writes work).
+
+D10
+
+Reset vector
+
+D11
+
+Interrupt controller
+
+The core's built-in PIC, via extintsrc_req[] . See §9.
+
+D12
+
+FIR arithmetic
+
+16 taps, 16-bit signed data, 16-bit signed Q1.15 coefficients, 40-bit accumulator, sequential MAC (one tap per clock)
+
+D13
+
+Toolchain
+
+D14
+
+Language
+
+SystemVerilog-2012 for RTL and testbenches. No VHDL.
+
+D15
+
+Outstanding
+transactions
+
+The bridge presents at most one outstanding read and one outstanding write to the AXI4-Lite bus. Slaves may therefore be written without
+any ID or reordering logic.
+
+D16
+
+AXI4 sideband
+from the core
+
+AWCACHE , AWPROT , AWQOS , AWREGION , AWLOCK and their AR equivalents are consumed by the bridge and not forwarded (except PROT ,
+which is forwarded as AWPROT / ARPROT and then ignored by all slaves).
+
+0x0000_0000 (base of IMEM)
+
+riscv64-unknown-elf-gcc with -march=rv32imc -mabi=ilp32
+
+Assumption A1: The external sensor is I²C-compatible, 7-bit addressed, and exposes a 16-bit signed measurement across two consecutive register bytes (MSB
+first). The verification model shall emulate this. Default device address 0x48 .
+Assumption A2: The agent has access to the VeeR EL2 repository ( github.com/chipsalliance/Cores-VeeR-EL2 ). The core RTL is used as-is and not modified.
+Port names in this document should be cross-checked against the version actually cloned, since they have shifted slightly between releases.
+Assumption A3: The core, when configured without caches and without ICCM/DCCM, issues predominantly single-beat ( AWLEN=0 / ARLEN=0 ) transactions. The
+bridge must nonetheless handle ARLEN > 0 correctly, because the IFU may still fetch in bursts depending on the build. Do not assume bursts never happen.
+
+3. System Block Diagram
+3.1 Top-level structure
+(Interactive diagram omitted in PDF — see the ASCII block diagram in section 3.2.)
+
+3.2 ASCII view (for tools that cannot render Mermaid)
++--------------------------------------------+
+|
+|
+
+VeeR EL2 Core
+
+|
+
+(el2_swerv_wrapper, AXI4 build)
+
+|
+
+|
+|
+
+|
+IFU AXI4 (64b, RO)
+
+LSU AXI4 (64b, RW)
+
+|
+
++--------|---------------------------|-------+
+|
+
+|
+
++--------v---------+
+
++----------v-----------+
+
+| AXI4 -> AXI4L
+
+|
+
+AXI4 -> AXI4L
+
+|
+
+| bridge (read-only)|
+
+|
+
+|
+
+bridge (full)
+
+|
+
+| burst split
+
+|
+
+|
+
+burst split
+
+|
+
+| 64 -> 32 downsize|
+
+|
+
+64 -> 32 downsize
+
+|
+
++--------+---------+
+
+|
+
+ID capture/return
+
+|
+
+|
+
++----------+-----------+
+
+|
+
+|
+
+|
+
+v
+
+|
+
++=========================================+
+
+|
+
+|
+
+AXI4-Lite Interconnect (32-bit)
+
+|
+
+|
+
+|
+
+AR/AW address decode, one-hot select
+
+|
+
+|
+
+|
+
+R/B response routing, DECERR default
+
+|
+
+|
+
++==+====+====+====+====+====+====+====+===+
+
+|
+
+|
+
+|
+
+|
+
+|
+
+|
+
+|
+
+|
+
+v
+
+v
+
+v
+
+v
+
+v
+
+v
+
+v
+
+v
+
+v
+
+FIR
+
+PWM
+
++--------+
+
+IMEM DMEM UART TIMER GPIO I2C
+
+| IMEM
+
+(pB)
+
+|
+
+|
+DEFAULT
+(DECERR)
+
+| port A |
++--------+
+
+|
+scl/sda
+
+|
+--
+
+|
+pwm_out
+
+|
+[I2C SENSOR]
+
+|
+[ACTUATOR]
+
+3.3 Dataflow summary
+SENSOR --I2C--> I2C_IP --regs--> CPU --regs--> FIR_IP --regs--> CPU
+|
++-----------+-----------+
+|
+PWM_IP
+|
+ACTUATOR
+
+|
+UART_IP
+|
+HOST
+
+The processor is the only thing that moves data between IPs. There is no IP-to-IP path. This is deliberate: it makes every transfer observable in a register trace
+and removes any need for arbitration.
+
+4. Memory Map
+4.1 Global map
+Base
+
+Top
+
+Size
+
+Region
+
+Reached via
+
+Access
+
+0x0000_0000
+
+0x0000_7FFF
+
+32 KB
+
+IMEM
+
+IFU bridge (port A), LSU bridge + interconnect (port B)
+
+R (X)
+
+0x1000_0000
+
+0x1000_7FFF
+
+32 KB
+
+DMEM
+
+LSU
+
+R/W
+
+0x8000_0000
+
+0x8000_0FFF
+
+4 KB
+
+UART
+
+LSU
+
+R/W
+
+0x8000_1000
+
+0x8000_1FFF
+
+4 KB
+
+Timer
+
+LSU
+
+R/W
+
+0x8000_2000
+
+0x8000_2FFF
+
+4 KB
+
+GPIO
+
+LSU
+
+R/W
+
+0x8000_3000
+
+0x8000_3FFF
+
+4 KB
+
+I²C Controller
+
+LSU
+
+R/W
+
+0x8000_4000
+
+0x8000_4FFF
+
+4 KB
+
+FIR Filter
+
+LSU
+
+R/W
+
+0x8000_5FFF
+
+4 KB
+
+PWM Generator
+
+LSU
+
+R/W
+
+—
+
+—
+
+anything else
+
+LSU
+
+Default slave, returns DECERR
+
+0x8000_5000
+—
+
+Decode rule: ARADDR / AWADDR bits [31:28] select the region class ( 0x0 = IMEM, 0x1 = DMEM, 0x8 = peripherals). Within the peripheral class, [15:12] selects
+the IP. Within an IP, [7:2] selects the register. [11:8] is ignored, so peripheral registers alias every 256 bytes inside their 4 KB page — acceptable and simple.
+IMEM must also be readable through the interconnect so that .rodata (FIR coefficient tables, format strings) can be fetched with load instructions. Implement
+IMEM as a true dual-port memory with two independent AXI4-Lite slave interfaces: port A serves the IFU bridge, port B serves the interconnect. Both
+ports are read-only after the testbench preload.
+
+4.2 Linker script implication
+MEMORY {
+imem (rx)
+
+: ORIGIN = 0x00000000, LENGTH = 32K
+
+dmem (rw)
+
+: ORIGIN = 0x10000000, LENGTH = 32K
+
+}
+/* .text, .rodata -> imem ; .data, .bss, stack, heap -> dmem
+Stack pointer initialised to ORIGIN(dmem) + LENGTH(dmem) - 16 */
+
+5. AXI4-Lite Signal Definitions
+This is the signal set used on the entire SoC bus. M = driven by master, S = driven by slave.
+
+5.1 Global
+Signal
+
+Width
+
+Description
+
+ACLK
+
+1
+
+Bus clock. Same as clk .
+
+ARESETN
+
+1
+
+Active-low bus reset. Same as aresetn .
+
+5.2 Write address channel (AW)
+Signal
+
+Width
+
+Dir
+
+Description
+
+AWADDR
+
+32
+
+M
+
+Byte address of the write
+
+AWPROT
+
+3
+
+M
+
+Protection type — ignored by all slaves
+
+AWVALID
+
+1
+
+M
+
+Address is valid
+
+AWREADY
+
+1
+
+S
+
+Slave can accept the address
+
+5.3 Write data channel (W)
+Signal
+
+Width
+
+Dir
+
+Description
+
+WDATA
+
+32
+
+M
+
+Write data
+
+WSTRB
+
+4
+
+M
+
+Byte enables. Peripherals require 4'hF ; memories honour all values.
+
+WVALID
+
+1
+
+M
+
+Data is valid
+
+WREADY
+
+1
+
+S
+
+Slave can accept the data
+
+5.4 Write response channel (B)
+Signal
+
+Width
+
+Dir
+
+BRESP
+
+2
+
+S
+
+Description
+
+BVALID
+
+1
+
+S
+
+Response is valid
+
+BREADY
+
+1
+
+M
+
+Master can accept the response
+
+00 OKAY, 10 SLVERR, 11 DECERR
+
+5.5 Read address channel (AR)
+Signal
+
+Width
+
+Dir
+
+Description
+
+ARADDR
+
+32
+
+M
+
+Byte address of the read
+
+ARPROT
+
+3
+
+M
+
+Protection type — ignored by all slaves
+
+ARVALID
+
+1
+
+M
+
+Address is valid
+
+ARREADY
+
+1
+
+S
+
+Slave can accept the address
+
+5.6 Read data channel (R)
+Signal
+
+Width
+
+Dir
+
+Description
+
+RDATA
+
+32
+
+S
+
+Read data
+
+RRESP
+
+2
+
+S
+
+RVALID
+
+1
+
+S
+
+Read data is valid
+
+RREADY
+
+1
+
+M
+
+Master can accept the data
+
+00 OKAY, 10 SLVERR, 11 DECERR
+
+5.7 Mandatory protocol rules
+Every master and slave in this project must obey all of the following. These are the rules the assertions in §14.3 check.
+1. Once VALID is asserted it must remain asserted until the handshake completes. A master may not withdraw AWVALID because it changed its mind.
+2. Payload must be stable while VALID is high and READY is low. AWADDR , WDATA , WSTRB , ARADDR , RDATA , RRESP , BRESP do not change mid-wait.
+3. READY may be asserted before or after VALID, and may be withdrawn if no handshake occurred. Slaves are allowed to be combinationally ready.
+4. There must be no combinational path from an input VALID to the corresponding output READY within a slave if it would create a loop through the
+interconnect. The simplest safe policy, and the one this design uses: slaves register their READY.
+5. AW and W are independent channels. A slave must not require AW before W, or W before AW. The reusable shim in §6.5 handles this by waiting for both.
+6. B must not be issued before both AW and W have been accepted. Exactly one B response per write.
+7. Exactly one R beat per AR (AXI4-Lite has no bursts; there is no RLAST ).
+8. All channels return to their reset state on ARESETN low: all VALID signals deasserted. READY may be anything.
+9. No slave may stall a handshake for more than 32 cycles (design rule for this project, not an AXI requirement — it makes deadlock bugs surface quickly).
+Common bug to avoid #1: asserting BVALID as soon as AWVALID && AWREADY without waiting for W . The write has not happened yet. Common bug to
+avoid #2: clearing a "write pending" flag on BVALID instead of on BVALID && BREADY . The master may not be ready. Common bug to avoid #3: making
+AWREADY combinationally depend on WVALID and WREADY combinationally depend on AWVALID . That is a deadlock.
+
+6. Interconnect and Bridge Specification
+This section replaces everything that would previously have been AHB infrastructure. It is the largest single piece of new work in the project and should be
+completed and verified first (milestone M1).
+
+6.1 Modules to create
+Module
+
+File
+
+Purpose
+
+axi4_to_axi4lite
+
+rtl/bus/axi4_to_axi4lite.sv
+
+Full bridge: burst splitting, 64→32 downsizing, ID capture and return
+
+axi4_to_axi4lite_ro
+
+rtl/bus/axi4_to_axi4lite_ro.sv
+
+Read-only variant for the IFU port (AR/R only)
+
+axi4lite_decoder
+
+rtl/bus/axi4lite_decoder.sv
+
+Address → one-hot slave select, plus decode-error flag
+
+axi4lite_interconnect
+
+rtl/bus/axi4lite_interconnect.sv
+
+1 master → N slaves, independent read and write paths
+
+axi4lite_err_slave
+
+rtl/bus/axi4lite_err_slave.sv
+
+Returns DECERR for unmapped addresses
+
+axi4lite_regif
+
+rtl/bus/axi4lite_regif.sv
+
+Reusable slave shim. Converts AXI4-Lite into a simple register read/write strobe interface. Every
+peripheral instantiates this.
+
+axi4lite_sram
+
+rtl/mem/axi4lite_sram.sv
+
+Single-port AXI4-Lite SRAM (DMEM)
+
+axi4lite_sram_dp
+
+rtl/mem/axi4lite_sram_dp.sv
+
+Dual-port AXI4-Lite SRAM (IMEM)
+
+axi4lite_assertions
+
+rtl/bus/axi4lite_assertions.sv
+
+SVA property set, bound to every slave port
+
+6.2 The bridge — why it is needed
+The VeeR EL2 core in its AXI4 build presents a full AXI4 master interface:
+64-bit WDATA / RDATA with 8-bit WSTRB
+burst support: AWLEN / ARLEN up to 255, AWSIZE / ARSIZE , AWBURST / ARBURST
+transaction IDs: AWID / BID , ARID / RID
+WLAST / RLAST
+
+sideband: CACHE , PROT , QOS , REGION , LOCK
+AXI4-Lite has none of the burst, ID, or LAST signalling and is 32-bit here. The bridge reconciles the two. Skipping it and wiring the core straight to Lite slaves will
+not work.
+
+6.3 Bridge — read path
+State machine: R_IDLE -> R_ISSUE -> R_WAIT -> (repeat for each beat) -> R_RESP
+
+1. Accept AR. On arvalid && arready , capture arid , araddr , arlen , arsize , arburst . Set beat_total = arlen + 1 , beat_idx = 0 .
+2. Compute the address for this beat. For arburst == INCR : addr = araddr + (beat_idx << arsize) . For arburst == FIXED : addr = araddr . WRAP is not
+supported; if it appears, complete the transaction with RRESP = SLVERR on every beat. (With ICCM/DCCM and caches disabled, WRAP should never be issued.
+Assert on it.)
+3. Split into 32-bit Lite reads. Each 64-bit AXI4 beat becomes two AXI4-Lite reads at addr and addr+4 . Issue the low word first. Assemble rdata_64 =
+{hi_word, lo_word} . - If arsize < 3 (the core requested fewer than 8 bytes), only one Lite read is needed; replicate the 32-bit result onto both lanes of RDATA
+and let the core select. Drive rdata_64 = {word, word} .
+4. Return the beat. Drive RID = captured id , RVALID = 1 , RLAST = (beat_idx == beat_total-1) , RRESP = the worse of the two Lite responses ( DECERR >
+SLVERR > OKAY ).
+5. Advance. On rvalid && rready , increment beat_idx ; if more beats remain, go back to step 2.
+Only one AR is accepted at a time ( D15 ). Deassert ARREADY while a burst is in flight.
+
+6.4 Bridge — write path
+State machine: W_IDLE -> W_COLLECT -> W_ISSUE_LO -> W_ISSUE_HI -> W_BRESP
+
+1. Accept AW. Capture awid , awaddr , awlen , awsize , awburst . Deassert AWREADY .
+2. Accept W beats. For each 64-bit WDATA with 8-bit WSTRB : - Low word: if WSTRB[3:0] != 0 , issue an AXI4-Lite write of WDATA[31:0] with WSTRB[3:0] to addr .
+- High word: if WSTRB[7:4] != 0 , issue an AXI4-Lite write of WDATA[63:32] with WSTRB[7:4] to addr+4 . - A lane with an all-zero strobe is skipped
+entirely — do not issue a Lite write with WSTRB = 0 . This matters: a 32-bit store from the core arrives as a 64-bit beat with only one lane enabled.
+3. Accumulate the response. Keep a running worst-case bresp .
+4. On WLAST , once all Lite writes for that beat have received their B responses, drive BID = captured id , BRESP = accumulated , BVALID = 1 .
+5. Clear on BVALID && BREADY , then reassert AWREADY .
+
+6.5 The reusable slave shim —
+
+axi4lite_regif
+
+Every peripheral (UART, Timer, GPIO, I²C, FIR, PWM) instantiates this once. It exposes a trivially simple interface to the IP logic, so no IP author has to touch AXI:
+
+module axi4lite_regif #(
+parameter int ADDR_LSB
+
+= 2,
+
+// word aligned
+
+parameter int REG_BITS
+
+= 6
+
+// haddr[7:2] -> 64 registers
+
+)(
+input
+
+logic
+
+aclk,
+
+input
+
+logic
+
+aresetn,
+
+// ---- AXI4-Lite slave port (signals per section 5) ---input
+
+logic [31:0]
+
+s_awaddr,
+
+input
+
+logic [2:0]
+
+s_awprot,
+
+input
+
+logic
+
+s_awvalid,
+
+output logic
+
+s_awready,
+
+input
+
+logic [31:0]
+
+s_wdata,
+
+input
+
+logic [3:0]
+
+s_wstrb,
+
+input
+
+logic
+
+s_wvalid,
+
+output logic
+
+s_wready,
+
+output logic [1:0]
+
+s_bresp,
+
+output logic
+
+s_bvalid,
+
+input
+
+logic
+
+s_bready,
+
+input
+
+logic [31:0]
+
+s_araddr,
+
+input
+
+logic [2:0]
+
+s_arprot,
+
+input
+
+logic
+
+s_arvalid,
+
+output logic
+
+s_arready,
+
+output logic [31:0]
+
+s_rdata,
+
+output logic [1:0]
+
+s_rresp,
+
+output logic
+
+s_rvalid,
+
+input
+
+s_rready,
+
+logic
+
+// ---- Simple register-side interface to the IP ---output logic [REG_BITS-1:0]
+
+reg_waddr,
+
+output logic [31:0]
+
+reg_wdata,
+
+output logic
+
+reg_wen,
+
+output logic [REG_BITS-1:0]
+
+reg_raddr,
+
+output logic
+
+reg_ren,
+
+// 1-cycle strobe
+
+input
+
+logic [31:0]
+
+reg_rdata,
+
+// must be valid 1 cycle after reg_ren
+
+input
+
+logic
+
+reg_err
+
+// IP-signalled error -> SLVERR
+
+// 1-cycle strobe
+
+);
+
+Required behaviour of the shim:
+Write: assert s_awready and s_wready together only when both s_awvalid and s_wvalid are high and no write is already in flight. On that handshake, emit
+a one-cycle reg_wen with reg_waddr = s_awaddr[ADDR_LSB+REG_BITS-1:ADDR_LSB] . Then drive s_bvalid the following cycle with s_bresp = (s_wstrb != 4'hF
+|| reg_err) ? SLVERR : OKAY . Hold until s_bready .
+Read: on s_arvalid with no read in flight, assert s_arready for one cycle and emit reg_ren with reg_raddr . One cycle later, latch reg_rdata and assert
+s_rvalid with s_rresp = reg_err ? SLVERR : OKAY . Hold until s_rready .
+Read and write paths are independent and may be in flight simultaneously.
+Unimplemented register offsets return 0 with OKAY (not an error) — this keeps register-sweep tests simple.
+This one module carries all the protocol risk. Verify it exhaustively (§14.1) and the six peripherals become easy.
+
+6.6 Interconnect
+axi4lite_interconnect is a 1-to-N demux, not a crossbar. It needs:
+
+Write path: decode AWADDR into a one-hot select. Route AW and W to the selected slave. Route the selected slave's B back. Because only one write is
+outstanding (D15), a single registered wsel_q is sufficient — capture it on the AW handshake, use it to route W and B , clear it on BVALID && BREADY .
+Read path: decode ARADDR into a one-hot select. Capture into rsel_q on the AR handshake. Route R back from rsel_q . Clear on RVALID && RREADY .
+Decode miss: route to axi4lite_err_slave , which accepts the address and data, then returns DECERR on B or R . It must still consume the W beat, or the
+bus deadlocks.
+Critical: W routing must follow wsel_q captured from the AW handshake, not a fresh decode of AWADDR . By the time W arrives, AWADDR may no longer be
+valid.
+
+6.7 Memory slaves
+axi4lite_sram : synchronous single-port RAM, parameterized DEPTH_WORDS . Honours WSTRB per byte lane. One-cycle read latency, so RVALID lands one cycle
+after the AR handshake. Backdoor $readmemh task for testbench preload.
+axi4lite_sram_dp : two independent AXI4-Lite slave ports sharing one memory array. Port A is read-only (IFU), port B is read-write (interconnect, but writes are
+unused in the baseline). No arbitration is needed because the underlying array is true dual-port.
+
+7. Core Integration
+7.1 Core configuration
+$RV_ROOT/configs/veer.config -target=default \
+-set=build_axi4=1 \
+-set=iccm_enable=0 \
+-set=dccm_enable=0 \
+-set=icache_enable=0 \
+-set=reset_vec=0x00000000 \
+-set=pic_total_int=8
+
+7.2 Core port groups
+Group
+
+Signals (indicative names — verify against cloned RTL)
+
+Connect to
+
+Clock/reset
+
+clk , rst_l , dbg_rst_l
+
+Reset
+vector
+
+rst_vec[31:1]
+
+Top-level clock and reset tree
+
+NMI
+
+nmi_int , nmi_vec[31:1]
+
+Tie nmi_int=0 , nmi_vec=31'h0
+
+Core ID
+
+core_id[31:4]
+
+Tie 0
+
+IFU AXI4
+(read
+only)
+
+ifu_axi_arvalid , ifu_axi_arready , ifu_axi_arid[TAG-1:0] , ifu_axi_araddr[31:0] , ifu_axi_arlen[7:0] ,
+ifu_axi_arsize[2:0] , ifu_axi_arburst[1:0] , ifu_axi_arcache[3:0] , ifu_axi_arprot[2:0] ,
+ifu_axi_arqos[3:0] , ifu_axi_arregion[3:0] , ifu_axi_arlock , ifu_axi_rvalid , ifu_axi_rready ,
+ifu_axi_rid , ifu_axi_rdata[63:0] , ifu_axi_rresp[1:0] , ifu_axi_rlast
+
+axi4_to_axi4lite_ro → IMEM port
+A. Tie the unused write channels:
+ifu_axi_awready=0 ,
+ifu_axi_wready=0 ,
+ifu_axi_bvalid=0
+
+LSU AXI4
+(full)
+
+lsu_axi_awvalid/awready/awid/awaddr/awlen/awsize/awburst/awcache/awprot/awqos/awregion/awlock ,
+lsu_axi_wvalid/wready/wdata[63:0]/wstrb[7:0]/wlast , lsu_axi_bvalid/bready/bid/bresp ,
+lsu_axi_arvalid/arready/arid/araddr/arlen/arsize/arburst/arcache/arprot/arqos/arregion/arlock ,
+lsu_axi_rvalid/rready/rid/rdata[63:0]/rresp/rlast
+
+System
+bus
+(debug)
+
+sb_axi_*
+
+Tie off as an idle slave:
+sb_axi_awready=0 ,
+sb_axi_wready=0 ,
+sb_axi_bvalid=0 ,
+sb_axi_arready=0 ,
+sb_axi_rvalid=0
+
+DMA slave
+port
+
+dma_axi_*
+
+Tie off as an idle master:
+dma_axi_awvalid=0 ,
+dma_axi_wvalid=0 ,
+dma_axi_bready=1 ,
+dma_axi_arvalid=0 ,
+dma_axi_rready=1
+
+Interrupts
+
+extintsrc_req[7:1] , timer_int , soft_int
+
+See §9
+
+JTAG
+
+jtag_tck , jtag_tms , jtag_tdi , jtag_trst_n , jtag_tdo
+
+Tie inactive: tck=0, tms=1, tdi=0,
+trst_n=0
+
+MPC
+debug
+
+mpc_debug_halt_req , mpc_debug_run_req , mpc_reset_run_req
+
+0, 0, 1
+
+Test
+
+scan_mode , mbist_mode
+
+0, 0
+
+31'h0000_0000
+
+axi4_to_axi4lite →
+axi4lite_interconnect
+
+Tie-off discipline: an AXI port tied off incorrectly is a silent hang, not a visible error. For every unused slave port on the core, drive all READYs low and all
+VALIDs low. For every unused master port, drive all VALIDs low and all READYs high. Add an assertion that no VALID ever rises on a tied-off port.
+
+8. IP Specifications
+Every IP below is an AXI4-Lite slave implemented as axi4lite_regif + IP logic. The IP logic itself sees only reg_wen / reg_waddr / reg_wdata / reg_ren /
+reg_raddr / reg_rdata / reg_err . Register offsets are relative to the IP base address and are unchanged from v1.0 — firmware written against the previous
+spec still applies.
+
+8.1 I²C Controller ( rtl/ip/i2c_ctrl.sv ) — base
+
+0x8000_3000
+
+8.1.1 Function
+Master-only, single-master, standard-mode I²C. Generates START, repeated START, STOP, 8-bit byte transfers, and ACK/NACK handling. The processor drives the
+protocol one byte at a time through the command register — this keeps the hardware small and matches the well-known OpenCores I²C register model.
+
+8.1.2 Parameters
+Parameter
+
+Default
+
+Meaning
+
+CLK_FREQ_HZ
+
+50_000_000
+
+Input clock
+
+DEFAULT_PRESCALE
+
+124
+
+(CLK_FREQ / (5 × SCL_FREQ)) − 1 → 100 kHz
+
+8.1.3 Register map
+Offset
+
+Name
+
+Access
+
+Reset
+
+Description
+
+0x00
+
+PRER_LO
+
+R/W
+
+0xFF
+
+Clock prescaler, bits [7:0]
+
+0x04
+
+PRER_HI
+
+R/W
+
+0xFF
+
+Clock prescaler, bits [15:8]
+
+0x08
+
+CTRL
+
+R/W
+
+0x00
+
+0x0C
+
+TXR
+
+W
+
+0x00
+
+Byte to transmit. For an address byte: [7:1] = 7-bit slave address, [0] = R/W (0 = write, 1 = read)
+
+0x0C
+
+RXR
+
+R
+
+0x00
+
+Last byte received
+
+0x10
+
+CMD
+
+W
+
+0x00
+
+[7] STA, [6] STO, [5] RD, [4] WR, [3] ACK (0 = send ACK, 1 = send NACK), [0] IACK (clear interrupt). Self-clearing.
+
+0x10
+
+STAT
+
+R
+
+0x00
+
+[7] RxACK (1 = no ACK received), [6] BUSY (between START and STOP), [5] AL (arbitration lost), [1] TIP (transfer in progress),
+[0] IF (interrupt flag)
+
+[7] EN (core enable), [6] IEN (interrupt enable), [5:0] reserved
+
+8.1.4 Internal structure
+PRER --> [ clock divider ] --> 4-phase tick generator (scl_lo, scl_hi_setup, scl_hi, scl_hi_hold)
+|
+CMD
+
+--> [ byte-level FSM ] --------> [ bit-level FSM ] --> scl_o / scl_oe / sda_o / sda_oe
+
+TXR
+
+--> [ shift register ] <-------- sda_i
+
+|
+--> RXR
+
+Bit-level FSM states: IDLE, START_A, START_B, START_C, START_D, WR_A, WR_B, WR_C, WR_D, RD_A, RD_B, RD_C, RD_D, STOP_A, STOP_B, STOP_C .
+Byte-level FSM states: B_IDLE, B_START, B_READ, B_WRITE, B_ACK, B_STOP . Counts 8 bits, then handles the ACK bit.
+
+8.1.5 External pins (open-drain modelling)
+The IP exposes tri-state-ready signals, not raw inout ports. The top level does the inout conversion.
+Port
+
+Dir
+
+Description
+
+scl_i
+
+in
+
+Sampled SCL
+
+scl_o
+
+out
+
+Drive value (always 0 for open-drain)
+
+scl_oe
+
+out
+
+1 = actively pull low
+
+sda_i
+
+in
+
+Sampled SDA
+
+sda_o
+
+out
+
+Drive value
+
+sda_oe
+
+out
+
+1 = actively pull low
+
+irq
+
+out
+
+Level-high interrupt
+
+Top level: assign scl = scl_oe ? 1'b0 : 1'bz; with a pull-up in the testbench.
+
+8.1.6 Firmware usage sequence (read 2 bytes from sensor register
+
+0x00 )
+
+1. Write PRER_LO/PRER_HI, set CTRL.EN
+2. TXR
+
+<= (0x48<<1) | 0
+
+3. TXR
+
+<= 0x00
+
+; CMD <= STA|WR
+
+4. TXR
+
+<= (0x48<<1) | 1
+
+5. CMD
+
+<= RD (ACK=0)
+
+; poll TIP ; MSB = RXR
+
+6. CMD
+
+<= RD|STO (ACK=1)
+
+; poll TIP ; LSB = RXR
+
+; CMD <= WR
+; CMD <= STA|WR
+
+; poll STAT.TIP==0 ; check !RxACK
+; poll TIP ; check !RxACK
+; poll TIP ; check !RxACK
+
+7. sample = (int16_t)((MSB<<8) | LSB)
+
+8.2 FIR Filter ( rtl/ip/fir_filter.sv ) — base
+
+0x8000_4000
+
+8.2.1 Function
+A 16-tap direct-form FIR filter operating on signed 16-bit samples with signed Q1.15 coefficients. One sample is pushed in per write to DATA_IN ; the filter runs a
+sequential multiply-accumulate over 16 clocks, then presents a saturated 16-bit result in DATA_OUT and asserts STATUS.DONE .
+y[n] = sum over k = 0 .. N-1 of h[k] * x[n-k]
+
+8.2.2 Parameters
+
+Parameter
+
+Default
+
+Meaning
+
+NTAPS
+
+16
+
+Number of taps (must be a power of two)
+
+DWIDTH
+
+16
+
+Sample width, signed
+
+CWIDTH
+
+16
+
+Coefficient width, signed Q1.15
+
+AWIDTH
+
+40
+
+Accumulator width ( DWIDTH+CWIDTH+log2(NTAPS) = 36, rounded to 40)
+
+8.2.3 Register map
+Offset
+
+Name
+
+Access
+
+Reset
+
+0x00
+
+CTRL
+
+R/W
+
+0x0
+
+[0] EN — filter enabled. [1] FLUSH — write 1 to clear the delay line to zero (self-clearing). [2] IRQ_EN — raise irq on DONE.
+
+0x04
+
+STATUS
+
+R
+
+0x1
+
+[0] IDLE — ready for a new sample. [1] DONE — a result is available in DATA_OUT ; cleared on read of DATA_OUT . [2] BUSY —
+MAC in progress. [3] SAT — the last result saturated; sticky, cleared by writing 1.
+
+0x08
+
+DATA_IN
+
+W
+
+0x0C
+
+DATA_OUT
+
+R
+
+0x0
+
+[15:0] signed filtered result, sign-extended to 32 bits. Reading clears STATUS.DONE .
+
+0x10
+
+COEF_ADDR
+
+R/W
+
+0x0
+
+[3:0] index of the coefficient to write next. Auto-increments after each COEF_DATA write.
+
+0x14
+
+COEF_DATA
+
+R/W
+
+0x0
+
+[15:0] signed Q1.15 coefficient written to index COEF_ADDR . Reading returns the coefficient at COEF_ADDR .
+
+0x18
+
+SHIFT
+
+R/W
+
+15
+
+0x1C
+
+TAPS
+
+R
+
+16
+
+—
+
+Description
+
+Write [15:0] as a signed sample. The write itself starts the computation. A write while STATUS.BUSY is high is discarded and
+the IP asserts reg_err , producing BRESP = SLVERR .
+
+[5:0] right shift applied to the accumulator before truncation. Default 15 for Q1.15.
+Read-only: the compiled-in NTAPS . Lets firmware self-configure.
+
+Note on the read-clears-DONE behaviour: the shim emits reg_ren for exactly one cycle per AXI read, so the clear happens once per read. Do not clear
+DONE on s_arvalid directly — with AXI backpressure that can fire more than once.
+
+8.2.4 Datapath
+DATA_IN write (reg_wen with reg_waddr == 0x08>>2)
+|
+v
++-------------------+
+|
+
+Delay line
+
+|
+
+x[n-15] ... x[n]
+(NTAPS x DWIDTH shift register, shifts on each new sample)
+
++---------+---------+
+|
+
+x[n-k]
+
+(indexed by tap counter k)
+
+v
++--------+
+|
+
+MUL
+
+h[k]
+
+<-- coefficient RAM (NTAPS x CWIDTH)
+
+|<-------+
+
++---+----+
+| 32-bit signed product
+v
++--------+
+|
+
+ACC
+
+|
+
+40-bit signed, cleared at start of each sample
+
++---+----+
+|
+v
+
+arithmetic right shift by SHIFT
+
++-----------+
+| SATURATE
+
+|
+
+clamp to [-32768, +32767], set SAT flag if clamped
+
++-----+-----+
+v
+DATA_OUT
+
+8.2.5 Control FSM
+State
+
+Action
+
+Next
+
+IDLE
+
+IDLE=1 . Wait for reg_wen to DATA_IN with CTRL.EN=1 . On write: shift the sample into the delay line, clear ACC, set k=0 .
+
+MAC
+
+MAC
+
+ACC <= ACC + h[k] * x[n-k] ; k <= k+1 . BUSY=1 .
+
+MAC while k < NTAPS-1 , else ROUND
+
+ROUND
+
+Shift, saturate, latch into DATA_OUT . Set DONE=1 . Raise irq if IRQ_EN .
+
+IDLE
+
+Total latency: 18 clocks per sample (1 accept + 16 MAC + 1 round).
+
+8.2.6 Reference coefficients
+A 16-tap Hamming-windowed low-pass with cutoff at 0.1·Fs. Generate these with a short Python/SciPy script committed as sw/gen_coeffs.py , and emit them as a
+C array in sw/fir_coeffs.h . Coefficients must be normalized so that Σ|h[k]| < 1.0 in Q1.15 to avoid systematic saturation.
+
+8.3 PWM Generator ( rtl/ip/pwm_gen.sv ) — base
+
+0x8000_5000
+
+8.3.1 Function
+A prescaled up-counter compared against a duty value. PERIOD and DUTY are double-buffered: writes land in shadow registers and are transferred to the active
+registers at the counter wrap, so the output never glitches mid-cycle.
+
+8.3.2 Parameters
+Parameter
+
+Default
+
+Meaning
+
+NUM_CH
+
+1
+
+Number of independent channels (channel stride 0x20 )
+
+CWIDTH
+
+16
+
+Counter width
+
+8.3.3 Register map (channel 0; add
+
+0x20
+
+per additional channel)
+
+Offset
+
+Name
+
+Access
+
+Reset
+
+0x00
+
+CTRL
+
+R/W
+
+0x0
+
+Description
+
+0x04
+
+PERIOD
+
+R/W
+
+0xFFFF
+
+Counter top. The period is (PERIOD+1) × (PRESCALE+1) clocks. Shadowed.
+
+0x08
+
+DUTY
+
+R/W
+
+0x0
+
+Compare value. DUTY = 0 → always off. DUTY > PERIOD → always on. Shadowed.
+
+0x0C
+
+PRESCALE
+
+R/W
+
+0x0
+
+Clock divider; tick every PRESCALE+1 clocks. Shadowed.
+
+0x10
+
+COUNT
+
+R
+
+0x0
+
+Live counter value, for debug
+
+0x14
+
+STATUS
+
+R/W1C
+
+0x0
+
+[0] EN — enable the channel. [1] POL — 0: output high while count < duty ; 1: inverted. [2] IRQ_EN — interrupt on each wrap.
+[3] FORCE — when 1, output is driven to POL regardless of the counter.
+
+[0] WRAP — set on each counter wrap, write 1 to clear
+
+8.3.4 Behaviour
+tick
+
+: prescale counter reaches PRESCALE
+
+count
+
+: on tick, count <= (count == period_active) ? 0 : count + 1
+
+-> one tick
+
+wrap
+
+: count == period_active and tick
+
+pwm_raw
+
+: (count < duty_active)
+
+pwm_out
+
+: CTRL.FORCE ? CTRL.POL : (CTRL.EN ? (pwm_raw ^ CTRL.POL) : 1'b0)
+
+-> load shadows into active regs, set STATUS.WRAP
+
+8.3.5 Duty mapping used by firmware
+// filtered sample range [-32768, 32767] mapped to duty [0, PERIOD]
+uint32_t duty = ((uint32_t)(filtered + 32768) * (PERIOD + 1)) >> 16;
+
+8.4 UART ( rtl/ip/uart.sv ) — base
+
+0x8000_0000
+
+8-N-1, with a 16-deep TX FIFO and a 16-deep RX FIFO. 16× oversampling on receive.
+Offset
+
+Name
+
+Access
+
+Reset
+
+0x00
+
+TXDATA
+
+W
+
+—
+
+Description
+[7:0] byte pushed into the TX FIFO. A write while TX_FULL is discarded (no error).
+
+0x00
+
+RXDATA
+
+R
+
+—
+
+[7:0] byte popped from the RX FIFO
+
+0x04
+
+STATUS
+
+R
+
+0x6
+
+[0] TX_FULL, [1] TX_EMPTY, [2] RX_EMPTY, [3] RX_FULL, [4] OVERRUN (sticky), [5] FRAME_ERR (sticky)
+
+0x08
+
+BAUDDIV
+
+R/W
+
+434
+
+CLK_FREQ / BAUD_RATE . 50 MHz / 115200 ≈ 434.
+
+0x0C
+
+CTRL
+
+R/W
+
+0x3
+
+[0] TX_EN, [1] RX_EN, [2] TX_IRQ_EN (on TX_EMPTY), [3] RX_IRQ_EN (on !RX_EMPTY)
+
+Pins: uart_tx (out), uart_rx (in), irq (out).
+The RX FIFO pop is driven by reg_ren to offset 0x00 . Because the shim emits exactly one reg_ren per AXI read, there is no double-pop hazard.
+
+8.5 Timer ( rtl/ip/timer.sv ) — base
+
+0x8000_1000
+
+Provides the RISC-V machine timer ( mtime / mtimecmp ) plus a simple periodic tick.
+Offset
+
+Name
+
+Access
+
+Reset
+
+Description
+
+0x00
+
+MTIME_LO
+
+R/W
+
+0x0
+
+Free-running 64-bit counter, low word
+
+0x04
+
+MTIME_HI
+
+R/W
+
+0x0
+
+High word
+
+0x08
+
+MTIMECMP_LO
+
+R/W
+
+0xFFFFFFFF
+
+Compare value, low word
+
+0x0C
+
+MTIMECMP_HI
+
+R/W
+
+0xFFFFFFFF
+
+Compare value, high word
+
+0x10
+
+CTRL
+
+R/W
+
+0x1
+
+[0] EN — counter runs. [1] TIMER_IRQ_EN
+
+0x14
+
+PRESCALE
+
+R/W
+
+49
+
+mtime increments every PRESCALE+1 clocks (→ 1 MHz tick at 50 MHz)
+
+Outputs: timer_int (level, high while mtime >= mtimecmp ) → connects to the core's timer_int pin. Firmware clears it by writing a new mtimecmp .
+64-bit read/write hazard: the 32-bit bus cannot read mtime atomically. Firmware must read MTIME_HI , MTIME_LO , MTIME_HI again and retry if the high
+word changed. For writes, set MTIMECMP_LO = 0xFFFFFFFF first, then MTIMECMP_HI , then the real MTIMECMP_LO . Document both in the driver.
+
+8.6 GPIO ( rtl/ip/gpio.sv ) — base
+Offset
+
+Name
+
+0x8000_2000
+
+Access
+
+Reset
+0x0
+
+Description
+
+0x00
+
+DATA_OUT
+
+R/W
+
+0x04
+
+DATA_IN
+
+R
+
+0x08
+
+DIR
+
+R/W
+
+0x0
+
+1 = output, 0 = input, per bit
+
+0x0C
+
+IRQ_MASK
+
+R/W
+
+0x0
+
+Per-bit interrupt enable
+
+0x10
+
+IRQ_EDGE
+
+R/W
+
+0x0
+
+1 = rising edge, 0 = level high
+
+0x14
+
+IRQ_STAT
+
+R/W1C
+
+0x0
+
+Per-bit pending, write 1 to clear
+
+—
+
+Value driven on pins configured as outputs
+Synchronized pin values (two-flop synchronizer)
+
+Width parameter NGPIO = 16 . Pins: gpio_in[15:0] , gpio_out[15:0] , gpio_oe[15:0] , irq .
+
+9. Interrupt Map
+Core pin
+
+Source
+
+Type
+
+Notes
+
+timer_int
+
+Timer mtime >= mtimecmp
+
+level
+
+Dedicated core pin, not through the PIC
+
+soft_int
+
+tied 0
+
+—
+
+Unused
+
+extintsrc_req[1]
+
+UART
+
+level, active high
+
+TX empty / RX not empty
+
+extintsrc_req[2]
+
+Timer (general)
+
+level
+
+Optional secondary tick
+
+extintsrc_req[3]
+
+I²C
+
+level
+
+STAT.IF , cleared by CMD.IACK
+
+extintsrc_req[4]
+
+FIR
+
+level
+
+STATUS.DONE , cleared by reading DATA_OUT
+
+extintsrc_req[5]
+
+PWM
+
+level
+
+STATUS.WRAP , cleared by W1C
+
+extintsrc_req[6]
+
+GPIO
+
+level
+
+extintsrc_req[7]
+
+reserved
+
+—
+
+IRQ_STAT non-zero
+Tie 0
+
+All interrupt lines are level-sensitive and active high. Each IP must hold its line asserted until firmware clears the underlying condition.
+Baseline firmware is polled, not interrupt-driven. Wire the interrupts and verify they assert correctly, but the reference application in §13 uses polling.
+An interrupt-driven variant is a stretch goal.
+
+10. Complete Signal List
+10.1 SoC top-level ports ( soc_top.sv )
+Signal
+
+Width
+
+Dir
+
+Description
+
+clk
+
+1
+
+in
+
+System clock
+
+rst_n
+
+1
+
+in
+
+Asynchronous active-low reset
+
+uart_tx
+
+1
+
+out
+
+UART transmit
+
+uart_rx
+
+1
+
+in
+
+UART receive
+
+i2c_scl
+
+1
+
+inout
+
+I²C clock (open-drain, external pull-up)
+
+i2c_sda
+
+1
+
+inout
+
+I²C data (open-drain, external pull-up)
+
+out
+
+PWM output(s) to actuator
+
+inout
+
+General purpose I/O
+
+pwm_out
+
+NUM_CH
+
+gpio
+
+16
+
+10.2 Core-side AXI4 nets
+Net group
+
+Width
+
+Driver
+
+Consumer
+
+ifu_axi_ar*
+
+see §7.2
+
+Core IFU
+
+axi4_to_axi4lite_ro
+
+ifu_axi_r*
+
+64-bit data
+
+lsu_axi_aw* , lsu_axi_w*
+
+64-bit data, 8-bit strobe
+
+lsu_axi_b*
+
+—
+
+lsu_axi_ar*
+
+—
+
+lsu_axi_r*
+
+64-bit data
+
+axi4_to_axi4lite_ro
+Core LSU
+
+Core IFU
+axi4_to_axi4lite
+
+axi4_to_axi4lite
+
+Core LSU
+
+Core LSU
+
+axi4_to_axi4lite
+
+axi4_to_axi4lite
+
+Core LSU
+
+10.3 SoC AXI4-Lite bus nets (master side of the interconnect)
+Net
+
+Width
+
+Driver
+
+Consumers
+
+m_awaddr
+
+32
+
+bridge
+
+decoder, all slaves
+
+m_awprot
+
+3
+
+bridge
+
+all slaves
+
+m_awvalid
+
+1
+
+bridge
+
+selected slave
+
+m_awready
+
+1
+
+interconnect
+
+bridge
+
+m_wdata
+
+32
+
+bridge
+
+selected slave
+
+m_wstrb
+
+4
+
+bridge
+
+selected slave
+
+m_wvalid
+
+1
+
+bridge
+
+selected slave
+
+m_wready
+
+1
+
+interconnect
+
+bridge
+
+m_bresp
+
+2
+
+interconnect
+
+bridge
+
+m_bvalid
+
+1
+
+interconnect
+
+bridge
+
+m_bready
+
+1
+
+bridge
+
+selected slave
+
+m_araddr
+
+32
+
+bridge
+
+decoder, all slaves
+
+m_arprot
+
+3
+
+bridge
+
+all slaves
+
+m_arvalid
+
+1
+
+bridge
+
+selected slave
+
+m_arready
+
+1
+
+interconnect
+
+bridge
+
+m_rdata
+
+32
+
+interconnect
+
+bridge
+
+m_rresp
+
+2
+
+interconnect
+
+bridge
+
+m_rvalid
+
+1
+
+interconnect
+
+bridge
+
+m_rready
+
+1
+
+bridge
+
+selected slave
+
+10.4 Per-slave AXI4-Lite nets
+For each slave i in {IMEM_B, DMEM, UART, TIMER, GPIO, I2C, FIR, PWM, ERR} the interconnect exposes the full set: s_awaddr[i] , s_awprot[i] , s_awvalid[i] ,
+s_awready[i] , s_wdata[i] , s_wstrb[i] , s_wvalid[i] , s_wready[i] , s_bresp[i] , s_bvalid[i] , s_bready[i] , s_araddr[i] , s_arprot[i] , s_arvalid[i] ,
+s_arready[i] , s_rdata[i] , s_rresp[i] , s_rvalid[i] , s_rready[i] .
+Declare these as packed arrays so the interconnect can be written generically:
+logic [NSLV-1:0][31:0] s_awaddr, s_araddr, s_wdata, s_rdata;
+logic [NSLV-1:0][3:0]
+
+s_wstrb;
+
+logic [NSLV-1:0][1:0]
+
+s_bresp,
+
+logic [NSLV-1:0]
+
+s_awvalid, s_awready, s_wvalid, s_wready,
+
+s_rresp;
+
+s_bvalid,
+
+s_bready,
+
+s_rvalid,
+
+s_rready;
+
+s_arvalid, s_arready,
+
+10.5 Interrupt and sideband nets
+Net
+
+Width
+
+Driver
+
+Consumer
+
+irq_uart , irq_timer , irq_i2c , irq_fir , irq_pwm , irq_gpio
+
+1 each
+
+respective IPs
+
+extintsrc_req[6:1]
+
+timer_int
+
+1
+
+Timer
+
+Core timer_int
+
+aresetn
+
+1
+
+reset synchronizer
+
+everything
+
+10.6 Per-IP internal signals of interest (for waveform review)
+IP
+
+Signal
+
+Purpose
+
+Bridge (write)
+
+w_state , wr_id_q , wr_addr_q , lane_sel , bresp_acc
+
+Downsize and response tracing
+
+Bridge (read)
+
+r_state , beat_idx , beat_total , rd_id_q , word_lo , word_hi
+
+Burst split tracing
+
+Interconnect
+
+wsel_q , rsel_q , dec_err_w , dec_err_r
+
+Routing tracing
+
+Shim
+
+wr_busy , rd_busy , reg_wen , reg_ren
+
+Protocol tracing
+
+I²C
+
+bit_state , byte_state , bit_cnt , scl_tick , sda_oe
+
+Protocol tracing
+
+FIR
+
+fir_state , tap_cnt , acc , delay_line[] , coef_mem[] , sat_flag
+
+Arithmetic tracing
+
+PWM
+
+pre_cnt , count , duty_active , period_active , wrap_pulse
+
+Waveform tracing
+
+11. Data Paths
+Each numbered path below is a distinct flow of payload through the system. The agent should be able to point at each one in a waveform.
+
+DP-1 — Instruction fetch
+IMEM port A --> axi4lite R channel (32b) --> bridge_ro assembles two words
+--> ifu_axi_rdata[63:0] --> Core IFU --> decode/execute
+
+Read-only. If the IFU issues a burst ( ARLEN > 0 ), the bridge emits 2 × (ARLEN+1) Lite reads and returns ARLEN+1 beats with RLAST on the final one.
+
+DP-2 — Sensor acquisition (external → CPU)
+Sensor --sda--> i2c sda_i --> bit FSM shift register --> RXR register
+RXR --> reg_rdata --> shim RDATA --> interconnect --> bridge (lane replicate)
+--> lsu_axi_rdata[63:0] --> CPU register
+
+Two passes yield MSB and LSB; firmware combines them into a signed 16-bit sample. Throughput is bounded by SCL (100 kHz) — roughly 200 µs for the full 2byte read sequence.
+
+DP-3 — Sample push (CPU → FIR)
+CPU rs2 --> lsu_axi_wdata[63:0] + wstrb[7:0]
+--> bridge: selects the enabled 32-bit lane, issues one Lite write
+--> interconnect (wsel_q = FIR) --> shim reg_wen/reg_wdata
+--> FIR DATA_IN latch --> delay line x[n]
+
+A single 32-bit sw instruction. The bridge must not issue a second Lite write for the disabled lane.
+
+DP-4 — FIR computation (internal)
+delay_line[k] --+
++--> multiplier --> 40-bit accumulator (16 iterations)
+coef_mem[k]
+
+---+
+
+accumulator --> arithmetic right shift (SHIFT) --> saturate to 16 bits --> DATA_OUT
+
+18 clocks, entirely internal. No bus activity.
+
+DP-5 — Result read (FIR → CPU)
+FIR DATA_OUT --> reg_rdata --> shim RDATA --> interconnect --> bridge
+--> lsu_axi_rdata --> CPU register (sign-extended)
+
+DP-6 — Control output (CPU → PWM → actuator)
+CPU (duty computed in software) --> bridge --> interconnect --> PWM shim
+--> PWM DUTY shadow register --[at counter wrap]--> duty_active
+--> comparator vs count --> pwm_raw --> polarity/enable --> pwm_out pin
+
+DP-7 — Telemetry (CPU → host)
+CPU --> bridge --> interconnect --> UART shim --> TXDATA --> TX FIFO
+--> shift register --> uart_tx pin --> host
+
+DP-8 — Memory access (stack, globals, buffers)
+CPU <--> lsu_axi_* <--> bridge <--> interconnect <--> DMEM
+
+This is the only path where WSTRB values other than 4'hF occur, from sb and sh instructions.
+
+12. Control Paths
+Control paths carry decisions, not payload.
+
+CP-1 — Write address decode and routing
+m_awaddr[31:28], m_awaddr[15:12]
+--> axi4lite_decoder --> wsel (one-hot, or dec_err_w)
+--> on (m_awvalid && m_awready): wsel_q <= wsel
+--> W channel routed by wsel_q
+--> B channel routed back from wsel_q
+--> on (m_bvalid && m_bready): wsel_q cleared, AWREADY reasserted
+
+CP-2 — Read address decode and routing
+m_araddr --> decoder --> rsel (one-hot, or dec_err_r)
+--> on (m_arvalid && m_arready): rsel_q <= rsel
+--> R channel routed back from rsel_q
+--> on (m_rvalid && m_rready): rsel_q cleared, ARREADY reasserted
+
+Read and write routing are fully independent — a read to the FIR may be in flight while a write to the UART is outstanding.
+
+CP-3 — Back-pressure
+slave deasserts s_awready/s_wready --> interconnect deasserts m_awready/m_wready
+--> bridge holds AW/W valid, payload stable
+--> bridge deasserts lsu_axi_awready/wready
+--> core stalls the store pipeline
+
+Symmetrically for reads via ARREADY and RVALID . Nothing is dropped; every stall propagates as a handshake stall.
+
+CP-4 — Error responses
+unmapped address
+
+--> dec_err --> axi4lite_err_slave
+accepts AW, consumes W, returns BRESP = DECERR
+accepts AR,
+
+returns RRESP = DECERR
+
+peripheral WSTRB != F --> shim reg_err
+
+--> BRESP = SLVERR
+
+FIR write while busy
+
+--> BRESP = SLVERR
+
+--> fir reg_err
+
+--> bridge propagates the worst response of all split beats to the core
+--> core takes a load/store access-fault trap
+
+Response precedence: DECERR > SLVERR > OKAY . When one 64-bit AXI4 beat splits into two Lite transfers, the beat's response is the worse of the two.
+
+CP-5 — Burst splitting sequence (read)
+AR accepted (ARLEN=n, ARSIZE=3)
+for beat in 0..n:
+Lite read at addr + beat*8
+
+-> word_lo
+
+Lite read at addr + beat*8 + 4
+
+-> word_hi
+
+drive RDATA = {word_hi, word_lo}, RLAST = (beat == n), RVALID = 1
+wait for RREADY
+ARREADY reasserted
+
+CP-6 — I²C command sequencing
+CPU writes CMD --> byte FSM decodes STA/STO/RD/WR/ACK
+--> byte FSM issues primitives to bit FSM
+--> bit FSM steps on scl_tick from the prescaler
+--> on completion: TIP=0, IF=1, RxACK captured
+--> CPU polls STAT (or takes irq_i2c)
+
+CP-7 — FIR start/done handshake
+reg_wen to DATA_IN (with CTRL.EN=1, STATUS.IDLE=1) --> start pulse
+--> FSM: IDLE -> MAC(x16) -> ROUND -> IDLE
+--> DONE=1, irq_fir=1 (if IRQ_EN)
+--> CPU reads DATA_OUT --> reg_ren clears DONE --> irq_fir=0
+
+CP-8 — PWM shadow register update
+CPU writes DUTY/PERIOD/PRESCALE --> shadow registers, no immediate effect
+--> counter reaches period_active --> wrap_pulse
+--> active <= shadow ; STATUS.WRAP <= 1 ; irq_pwm (if IRQ_EN)
+
+CP-9 — Sampling cadence
+Timer mtime increments (prescaled) --> compare vs mtimecmp --> timer_int
+--> firmware detects (polled via MTIME_LO) --> one sample iteration
+--> firmware writes new mtimecmp = mtime + PERIOD_US --> timer_int deasserts
+
+CP-10 — Reset sequencing
+rst_n (async) --> 2-FF reset synchronizer (deassert synchronous to clk)
+--> aresetn to core, bridges, interconnect, all slaves
+--> all VALID signals low, all in-flight state cleared
+--> core fetches from rst_vec = 0x00000000
+
+Hold reset asserted for at least 16 clocks in the testbench.
+
+13. Firmware Application
+13.1 Flow
+reset
+|
+v
+crt0.S : set gp/sp, zero .bss, copy .data, call main
+|
+v
+main():
+uart_init(115200)
+i2c_init(100kHz)
+fir_init(coeffs from fir_coeffs.h, SHIFT=15, EN=1)
+pwm_init(PERIOD=999, PRESCALE=49, POL=0, EN=1)
+timer_init(period = 10000 us)
+
+// ~1 kHz PWM
+// 100 Hz sampling
+
+|
+v
+forever:
+wait_for_timer_tick()
+raw = i2c_read_sensor()
+
+// DP-2
+
+fir_write(raw)
+
+// DP-3
+
+while (!(fir_status() & DONE)) ;
+
+// CP-7
+
+filt = fir_read()
+
+// DP-5
+
+duty = map_to_duty(filt)
+pwm_set_duty(duty)
+
+// DP-6
+
+if (++n % 10 == 0)
+uart_printf("raw=%6d filt=%6d duty=%4u\r\n", raw, filt, duty)
+
+// DP-7
+
+13.2 Files to produce
+File
+
+Contents
+
+sw/crt0.S
+
+Reset handler, stack setup, .bss clear, jump to main
+
+sw/link.ld
+
+Linker script per §4.2
+
+sw/soc.h
+
+Base addresses and register offset macros for all IPs
+
+sw/uart.c/.h
+
+uart_init , uart_putc , uart_puts , minimal uart_printf ( %d , %u , %x , %s , %c only)
+
+sw/i2c.c/.h
+
+i2c_init , i2c_write_byte , i2c_read_byte , i2c_read_sensor
+
+sw/fir.c/.h
+
+fir_init , fir_write , fir_read , fir_status
+
+sw/pwm.c/.h
+
+pwm_init , pwm_set_duty
+
+sw/timer.c/.h
+
+timer_init , timer_wait_tick , timer_now_us (with the 64-bit read retry loop)
+
+sw/gen_coeffs.py
+
+Generates fir_coeffs.h
+
+sw/main.c
+
+The application above
+
+sw/Makefile
+
+Builds .elf , .bin , .hex (for $readmemh ), and .dis
+
+All register accesses use volatile uint32_t * and are naturally 32-bit aligned, which keeps WSTRB = 4'hF on every peripheral write. Never use a uint8_t * or
+uint16_t * to touch a peripheral register — that produces a partial strobe and the shim will return SLVERR . Compile with -O2 -march=rv32imc -mabi=ilp32 nostdlib -ffreestanding . No -flto .
+
+14. Verification Plan
+14.1 Unit level
+TB
+
+Must demonstrate
+
+tb_axi4lite_regif
+
+Highest priority. Write with AW-before-W, W-before-AW, and simultaneous. Read and write in flight together. Backpressure on B and R held
+for 1, 2, and 10 cycles. WSTRB != F → SLVERR. reg_err → SLVERR. No protocol assertion fires under randomized VALID/READY delays.
+
+tb_axi4lite_err_slave
+
+Returns DECERR on both B and R; consumes the W beat so the bus does not deadlock
+
+tb_axi4_to_axi4lite
+
+Single 32-bit write on each lane; 64-bit write with both lanes; write with one lane strobed off issues only one Lite write; single read; burst read
+with ARLEN = 1, 3, 7 ; RLAST correct; ID returned unchanged; SLVERR and DECERR propagate with correct precedence
+
+tb_axi4lite_interconnect
+
+Decode to each slave; independent read and write in flight; unmapped address → DECERR; W follows wsel_q not a fresh decode
+
+tb_axi4lite_sram
+
+Byte, halfword, word writes with correct WSTRB behaviour; read-after-write
+
+tb_i2c
+
+Against a behavioural I²C slave model: single-byte write, single-byte read, 2-byte read with repeated START, NACK handling, correct SCL
+frequency, correct START/STOP timing
+
+tb_fir
+
+Impulse response equals the coefficient set; step response settles to Σh[k]; random-input output matches a golden reference from the same
+Python script; saturation flagged; FLUSH clears the delay line; write-while-busy returns SLVERR
+
+tb_pwm
+
+Measured duty within ±1 count for duty = 0, 1, PERIOD/2, PERIOD, PERIOD+1; shadow registers do not glitch mid-period; polarity inversion;
+FORCE mode
+
+tb_uart
+
+Loopback at 115200 through an external UART model; FIFO full/empty flags; overrun flag; no double-pop on a backpressured read
+
+tb_timer
+
+mtime increments at the prescaled rate; timer_int asserts and deasserts correctly; the 64-bit read retry loop converges
+
+tb_gpio
+
+Direction control, input synchronization, edge and level interrupts
+
+Each unit TB should drive its AXI4-Lite port through a small reusable master BFM ( tb/models/axi4lite_master_bfm.sv ) offering write(addr, data, strb, resp)
+and read(addr, data, resp) tasks with randomizable handshake delays. Write the BFM once, use it in every TB.
+
+14.2 Integration level ( tb_soc_top )
+The system testbench instantiates soc_top plus: - an I²C sensor model ( tb/models/i2c_sensor_model.sv ) returning a programmable 16-bit value: a clean ramp,
+a ramp plus pseudo-random noise, or a step; - a UART monitor that decodes uart_tx and prints to the console; - a PWM duty monitor measuring high time
+over a full period, reported as a percentage; - $readmemh preload of IMEM from sw/main.hex .
+Required integration tests:
+Test
+
+Pass criterion
+
+test_boot
+
+Core fetches from 0x0 , reaches main , UART emits a banner string
+
+test_i2c_readback
+
+Firmware reads a known constant (e.g. 0x1234 ) and reports it on UART
+
+test_fir_pipeline
+
+With a noisy sensor stream, printed filt values track the underlying ramp with visibly reduced variance and match a C reference model within ±1
+LSB
+
+test_pwm_response
+
+Sensor value is stepped; measured PWM duty converges to the expected mapping within 10 sample periods
+
+test_bus_error
+
+Deliberate load from 0x9000_0000 produces DECERR on the R channel and the core takes a trap
+
+test_partial_strobe
+
+A sb to a peripheral register produces SLVERR ; the same sb to DMEM succeeds and modifies only one byte
+
+test_full_loop
+
+500 sample iterations complete with no X-propagation, no assertion failure, and monotonic UART output
+
+14.3 Assertions ( rtl/bus/axi4lite_assertions.sv , bound to every AXI4-Lite port)
+1. AWVALID stays high until AWREADY ; likewise WVALID , ARVALID , BVALID , RVALID .
+2. AWADDR , WDATA , WSTRB , ARADDR stable while VALID high and READY low.
+3. RDATA , RRESP , BRESP stable while VALID high and READY low.
+4. Exactly one B response per accepted AW + W pair (counter-based check).
+5. Exactly one R beat per accepted AR .
+6. BVALID never rises before both AW and W have handshaked.
+7. No VALID is high in the cycle after ARESETN deasserts.
+8. No handshake stalls for more than 32 cycles.
+9. WSTRB is never 4'b0000 on a peripheral port (the bridge must have filtered it).
+10. FIR: BUSY and IDLE are never both high.
+11. PWM: duty_active <= period_active + 1 at all times.
+12. I²C: scl_oe and sda_oe never drive a logic 1 (open-drain discipline).
+13. Tied-off core ports: no VALID ever rises on sb_axi_* or dma_axi_* .
+
+14.4 Coverage targets
+100% of reachable FSM states and legal transitions in the two bridges, the shim, I²C, FIR, and PWM.
+All register offsets in each IP written and read at least once.
+Both 32-bit lanes exercised through the bridge (address bit 2 = 0 and 1).
+Bridge read path exercised with ARLEN = 0 and at least one ARLEN > 0 .
+All three response codes ( OKAY , SLVERR , DECERR ) observed at the core boundary.
+FIR: both positive and negative saturation reached.
+
+15. Deliverables, Structure and Build
+15.1 Repository layout
+veer-sensor-soc/
+├── README.md
+├── docs/
+│
+
+├── design_spec.md
+
+<- this document
+
+│
+
+├── register_map.md
+
+<- generated summary of all registers
+
+│
+
+└── block_diagram.svg
+
+├── rtl/
+│
+
+├── soc_top.sv
+
+│
+
+├── bus/
+
+│
+
+│
+
+├── axi4_to_axi4lite.sv
+
+│
+
+│
+
+├── axi4_to_axi4lite_ro.sv
+
+│
+
+│
+
+├── axi4lite_decoder.sv
+
+│
+
+│
+
+├── axi4lite_interconnect.sv
+
+│
+
+│
+
+├── axi4lite_err_slave.sv
+
+│
+
+│
+
+├── axi4lite_regif.sv
+
+│
+
+│
+
+└── axi4lite_assertions.sv
+
+│
+
+├── mem/
+
+│
+
+│
+
+├── axi4lite_sram.sv
+
+│
+
+│
+
+└── axi4lite_sram_dp.sv
+
+│
+
+└── ip/
+
+│
+
+├── i2c_ctrl.sv
+
+│
+
+├── fir_filter.sv
+
+│
+
+├── pwm_gen.sv
+
+│
+
+├── uart.sv
+
+│
+
+├── timer.sv
+
+│
+
+└── gpio.sv
+
+├── third_party/Cores-VeeR-EL2/
+
+<- submodule, unmodified
+
+├── sw/
+
+<- see §13.2
+
+├── tb/
+│
+
+├── tb_soc_top.sv
+
+│
+
+├── unit/
+
+│
+
+├── models/
+
+│
+
+│
+
+├── axi4lite_master_bfm.sv
+
+│
+
+│
+
+├── axi4lite_slave_bfm.sv
+
+│
+
+│
+
+├── i2c_sensor_model.sv
+
+│
+
+│
+
+├── uart_monitor.sv
+
+│
+
+│
+
+└── pwm_monitor.sv
+
+│
+
+└── ref/
+
+│
+
+<- one TB per module in §14.1
+
+└── fir_ref.c
+
+<- golden FIR model
+
+├── sim/
+│
+
+├── Makefile
+
+│
+
+├── filelist.f
+
+│
+
+└── verilator.vlt
+
+└── scripts/
+├── build_core_config.sh
+└── run_all_tests.sh
+
+15.2 Build and run
+make core_config
+
+# runs veer.config with the settings in §7.1
+
+make sw
+
+# builds firmware -> sw/main.hex
+
+make unit
+
+# runs every unit testbench, prints PASS/FAIL per TB
+
+make sim
+
+# runs tb_soc_top with sw/main.hex preloaded
+
+make wave
+
+# opens dump.vcd in GTKWave
+
+make lint
+
+# verilator --lint-only on all RTL
+
+make synth
+
+# yosys elaboration check (no mapping required)
+
+run_all_tests.sh must exit non-zero if any test fails, and print a single summary table at the end.
+
+15.3 Acceptance criteria
+The project is complete when:
+1. make lint is clean (no warnings other than those explicitly waived in verilator.vlt ).
+2. Every unit testbench prints PASS , with the AXI4-Lite protocol assertions bound and active.
+3. make sim runs test_full_loop to completion with no X-propagation and no assertion failure.
+4. The UART transcript shows filtered values with measurably lower variance than the raw values on a noisy input, and the PWM monitor reports a duty that
+tracks the filtered value.
+5. docs/register_map.md matches the RTL (offsets, reset values, access types).
+6. README.md explains how to reproduce every result from a clean clone, and documents the AXI4 → AXI4-Lite bridge as the one place where full AXI4 is handled.
+
+15.4 Suggested milestones
+#
+
+Milestone
+
+M1
+
+AXI4-Lite infrastructure
+
+Output
+
+M2
+
+Bridge
+
+M3
+
+Memories + core boot
+
+M4
+
+PWM IP
+
+tb_pwm passing, duty measurable in the system TB
+
+M5
+
+FIR IP
+
+tb_fir matching the golden model
+
+axi4lite_regif , err slave, decoder, interconnect, master BFM — all unit TBs passing
+axi4_to_axi4lite and the read-only variant passing, including burst and partial-strobe cases
+Core fetches from IMEM, "Hello" over UART
+
+M6
+
+I²C IP
+
+M7
+
+Full integration
+
+M8
+
+Documentation and cleanup
+
+tb_i2c passing against the sensor model
+test_full_loop passing, all assertions on
+Register map, README, waveform screenshots
+
+M1 and M2 are the highest-risk items. Do not begin M3 until the bridge passes randomized-delay testing — a bridge bug surfaces later as an unexplained core
+hang, which is the hardest failure mode to debug in this project.
+
+16. Open Items to Confirm Before Coding
+These are the only things not fixed by this document. If no answer is available, use the stated default and note the assumption in the README.
+#
+
+Question
+
+Default if unanswered
+
+O1
+
+Which specific sensor part? Affects the I²C register sequence in i2c_read_sensor() .
+
+Generic 7-bit device at 0x48 , 16-bit signed value at register 0x00 ,
+MSB first
+
+O2
+
+Does the requirement say "AXI4-Lite everywhere" or "AXI4-Lite for the peripheral bus"? The core
+cannot avoid speaking full AXI4 on its own ports.
+
+Peripheral bus and all memories are AXI4-Lite; the bridge is
+documented as the sole AXI4 boundary
+
+O3
+
+Target simulator — Verilator or Icarus/VCS? Affects TB coding style.
+
+Verilator for lint + Icarus for the behavioural TBs
+
+O4
+
+Is an FPGA demo in scope?
+
+No. Simulation only; keep the design FPGA-friendly (no vendor
+primitives, inferred memories).
+
+O5
+
+Required FIR order — is 16 taps sufficient for the marking scheme?
+
+16 taps, parameterized so it can be raised
+
+O6
+
+Does the evaluation require UVM?
+
+No. Directed SystemVerilog testbenches with assertions and a
+golden C reference.
+
+Appendix A — Register Map Summary
+Address
+
+Register
+
+Access
+
+Reset
+
+0x8000_0000
+
+UART.TXDATA / RXDATA
+
+W/R
+
+—
+
+0x8000_0004
+
+UART.STATUS
+
+R
+
+0x6
+
+0x8000_0008
+
+UART.BAUDDIV
+
+R/W
+
+434
+
+0x8000_000C
+
+UART.CTRL
+
+R/W
+
+0x3
+
+0x8000_1000
+
+TIMER.MTIME_LO
+
+R/W
+
+0x0
+
+0x8000_1004
+
+TIMER.MTIME_HI
+
+R/W
+
+0x0
+
+0x8000_1008
+
+TIMER.MTIMECMP_LO
+
+R/W
+
+0xFFFFFFFF
+
+0x8000_100C
+
+TIMER.MTIMECMP_HI
+
+R/W
+
+0xFFFFFFFF
+
+0x8000_1010
+
+TIMER.CTRL
+
+R/W
+
+0x1
+
+0x8000_1014
+
+TIMER.PRESCALE
+
+R/W
+
+49
+
+0x8000_2000
+
+GPIO.DATA_OUT
+
+R/W
+
+0x8000_2004
+
+GPIO.DATA_IN
+
+R
+
+0x8000_2008
+
+GPIO.DIR
+
+R/W
+
+0x0
+
+0x8000_200C
+
+GPIO.IRQ_MASK
+
+R/W
+
+0x0
+
+0x8000_2010
+
+GPIO.IRQ_EDGE
+
+R/W
+
+0x0
+
+0x8000_2014
+
+GPIO.IRQ_STAT
+
+R/W1C
+
+0x0
+
+0x8000_3000
+
+I2C.PRER_LO
+
+R/W
+
+0xFF
+
+0x8000_3004
+
+I2C.PRER_HI
+
+R/W
+
+0xFF
+
+0x8000_3008
+
+I2C.CTRL
+
+R/W
+
+0x00
+
+0x8000_300C
+
+I2C.TXR / RXR
+
+W/R
+
+0x00
+
+0x8000_3010
+
+I2C.CMD / STAT
+
+W/R
+
+0x00
+
+0x8000_4000
+
+FIR.CTRL
+
+R/W
+
+0x0
+
+0x8000_4004
+
+FIR.STATUS
+
+R
+
+0x8000_4008
+
+FIR.DATA_IN
+
+W
+
+0x8000_400C
+
+FIR.DATA_OUT
+
+R
+
+0x0
+
+0x8000_4010
+
+FIR.COEF_ADDR
+
+R/W
+
+0x0
+
+0x8000_4014
+
+FIR.COEF_DATA
+
+R/W
+
+0x0
+
+0x8000_4018
+
+FIR.SHIFT
+
+R/W
+
+15
+
+0x8000_401C
+
+FIR.TAPS
+
+R
+
+16
+
+0x8000_5000
+
+PWM.CTRL
+
+R/W
+
+0x0
+
+0x8000_5004
+
+PWM.PERIOD
+
+R/W
+
+0xFFFF
+
+0x8000_5008
+
+PWM.DUTY
+
+R/W
+
+0x0
+
+0x8000_500C
+
+PWM.PRESCALE
+
+R/W
+
+0x0
+
+0x8000_5010
+
+PWM.COUNT
+
+R
+
+0x0
+
+0x8000_5014
+
+PWM.STATUS
+
+R/W1C
+
+0x0
+
+0x0
+—
+
+0x1
+—
+
+Appendix B — AXI4 vs AXI4-Lite Quick Reference
+Feature
+
+AXI4 (core side)
+
+AXI4-Lite (SoC side)
+
+Bridge action
+
+Data width
+
+64-bit
+
+32-bit
+
+Split each beat into two transfers
+
+Bursts
+WLAST / RLAST
+IDs ( AWID / BID / ARID / RID )
+Strobes
+
+none
+
+Expand into individual transfers
+
+present
+
+AWLEN / ARLEN up to 255
+
+absent
+
+Generate RLAST on the final beat
+
+present
+
+absent
+
+Capture on AW/AR, replay on B/R
+
+WSTRB[3:0]
+
+Split per lane; skip all-zero lanes
+
+WSTRB[7:0]
+
+CACHE / QOS / REGION / LOCK
+
+present
+
+absent
+
+Consumed and dropped
+
+PROT
+
+present
+
+present
+
+Forwarded, ignored by slaves
+
+Outstanding transactions
+
+multiple
+
+one read + one write (D15)
+
+Bridge serializes
+
+Responses
+
+OKAY/EXOKAY/SLVERR/DECERR
+
+OKAY/SLVERR/DECERR
+
+Worst-of accumulation across split beats
+
+Appendix C — Instruction to the Implementing Agent
+Implement the system described above. Work milestone by milestone (§15.4); do not start a milestone until the previous one's tests pass. For each RTL
+module, write the module and its unit testbench together, and run the testbench before moving on.
+Treat §2 as binding: AXI4-Lite is the SoC interconnect. Do not introduce AHB anywhere. The only place full AXI4 appears is the bridge in §6, which
+exists solely because the VeeR EL2 core's native port is AXI4.
+Bind the assertion set from §14.3 to every AXI4-Lite port from the very first testbench onward — not at the end. Most bugs in this design are handshake bugs,
+and they are invisible without assertions.
+If you find a genuine contradiction in this document, state it explicitly, choose the interpretation that keeps the design simplest, and record the decision in
+README.md under "Deviations". Do not silently change a register offset, reset value, or bit position.
+
+

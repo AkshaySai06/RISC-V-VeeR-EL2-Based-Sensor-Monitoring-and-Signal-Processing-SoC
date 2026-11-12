@@ -1,0 +1,261 @@
+Command: /home/student/Documents/akshay_honours/Honours_project/soc_uvm/sim/./simv_soc_uvm +UVM_TESTNAME=uart_connectivity_test +HEX_FILE=../../sw/main.hex -l uart_connectivity_run.log
+Chronologic VCS simulator copyright 1991-2023
+Contains Synopsys proprietary information.
+Compiler version U-2023.03_Full64; Runtime version U-2023.03_Full64;  Nov  7 14:25 2026
+UVM_INFO /home/student/snps_tools_target/vcs/U-2023.03/etc/uvm-1.2/base/uvm_root.svh(402) @ 0: reporter [UVM/RELNOTES] 
+----------------------------------------------------------------
+UVM-1.2.Synopsys
+(C) 2007-2014 Mentor Graphics Corporation
+(C) 2007-2014 Cadence Design Systems, Inc.
+(C) 2006-2014 Synopsys, Inc.
+(C) 2011-2013 Cypress Semiconductor Corp.
+(C) 2013-2014 NVIDIA Corporation
+----------------------------------------------------------------
+
+  ***********       IMPORTANT RELEASE NOTES         ************
+
+  You are using a version of the UVM library that has been compiled
+  with `UVM_NO_DEPRECATED undefined.
+  See http://www.eda.org/svdb/view.php?id=3313 for more details.
+
+  You are using a version of the UVM library that has been compiled
+  with `UVM_OBJECT_DO_NOT_NEED_CONSTRUCTOR undefined.
+  See http://www.eda.org/svdb/view.php?id=3770 for more details.
+
+      (Specify +UVM_NO_RELNOTES to turn off this notice)
+
+UVM_INFO ../tb/tb_soc_uvm_top.sv(119) @ 0: reporter [TB] Preloading IMEM from ../../sw/main.hex ...
+UVM_INFO ../tb/tb_soc_uvm_top.sv(121) @ 0: reporter [TB] IMEM preload complete.
+UVM_INFO @ 0: reporter [RNTST] Running test uart_connectivity_test...
+UVM_INFO ../tb/tb_soc_uvm_top.sv(334) @ 0: reporter [TB_WAVE] Recording waveforms to uart_verification.vpd and uart_verification.vcd...
+VCD+ Writer U-2023.03_Full64 Copyright (c) 1991-2023 by Synopsys Inc.
+UVM_INFO ../soc_uvm_env/soc_test.sv(57) @ 0: uvm_test_top [SOC_TEST] soc_test build_phase complete: config retrieved, env created.
+UVM_INFO ../soc_uvm_env/soc_env.sv(79) @ 0: uvm_test_top.env [SOC_ENV] SoC UVM Environment built: 6 VIP agents + virtual sequencer.
+UVM_INFO ../soc_uvm_env/soc_virtual_sequencer.sv(30) @ 0: uvm_test_top.env.v_seqr [SOC_VSEQR] SoC Virtual Sequencer created.
+UVM_INFO ../soc_uvm_env/soc_env.sv(123) @ 0: uvm_test_top.env [SOC_ENV] connect_phase: VIP sequencers and virtual interfaces connected successfully.
+UVM_INFO /home/student/snps_tools_target/vcs/U-2023.03/etc/uvm-1.2/base/uvm_root.svh(589) @ 0: reporter [UVMTOP] UVM testbench topology:
+--------------------------------------------------------------
+Name                       Type                    Size  Value
+--------------------------------------------------------------
+uvm_test_top               uart_connectivity_test  -     @402 
+  env                      soc_env                 -     @434 
+    fir_agent              fir_vip_agent           -     @491 
+      drv                  fir_vip_driver          -     @660 
+        rsp_port           uvm_analysis_port       -     @679 
+        seq_item_port      uvm_seq_item_pull_port  -     @669 
+      mon                  fir_vip_monitor         -     @689 
+        ap                 uvm_analysis_port       -     @698 
+      seqr                 fir_vip_sequencer       -     @708 
+        rsp_export         uvm_analysis_export     -     @717 
+        seq_item_export    uvm_seq_item_pull_imp   -     @835 
+        arbitration_queue  array                   0     -    
+        lock_queue         array                   0     -    
+        num_last_reqs      integral                32    'd1  
+        num_last_rsps      integral                32    'd1  
+    gpio_agent             gpio_vip_agent          -     @464 
+      drv                  gpio_vip_driver         -     @850 
+        rsp_port           uvm_analysis_port       -     @869 
+        seq_item_port      uvm_seq_item_pull_port  -     @859 
+      mon                  gpio_vip_monitor        -     @879 
+        ap                 uvm_analysis_port       -     @888 
+      seqr                 gpio_vip_sequencer      -     @898 
+        rsp_export         uvm_analysis_export     -     @907 
+        seq_item_export    uvm_seq_item_pull_imp   -     @1025
+        arbitration_queue  array                   0     -    
+        lock_queue         array                   0     -    
+        num_last_reqs      integral                32    'd1  
+        num_last_rsps      integral                32    'd1  
+    i2c_agent              i2c_vip_agent           -     @473 
+      drv                  i2c_vip_driver          -     @1040
+        rsp_port           uvm_analysis_port       -     @1059
+        seq_item_port      uvm_seq_item_pull_port  -     @1049
+      mon                  i2c_vip_monitor         -     @1069
+        ap                 uvm_analysis_port       -     @1078
+      seqr                 i2c_vip_sequencer       -     @1088
+        rsp_export         uvm_analysis_export     -     @1097
+        seq_item_export    uvm_seq_item_pull_imp   -     @1215
+        arbitration_queue  array                   0     -    
+        lock_queue         array                   0     -    
+        num_last_reqs      integral                32    'd1  
+        num_last_rsps      integral                32    'd1  
+    pwm_agent              pwm_vip_agent           -     @500 
+      drv                  pwm_vip_driver          -     @1230
+        rsp_port           uvm_analysis_port       -     @1249
+        seq_item_port      uvm_seq_item_pull_port  -     @1239
+      mon                  pwm_vip_monitor         -     @1259
+        ap                 uvm_analysis_port       -     @1268
+      seqr                 pwm_vip_sequencer       -     @1278
+        rsp_export         uvm_analysis_export     -     @1287
+        seq_item_export    uvm_seq_item_pull_imp   -     @1405
+        arbitration_queue  array                   0     -    
+        lock_queue         array                   0     -    
+        num_last_reqs      integral                32    'd1  
+        num_last_rsps      integral                32    'd1  
+    timer_agent            timer_vip_agent         -     @482 
+      drv                  timer_vip_driver        -     @1420
+        rsp_port           uvm_analysis_port       -     @1439
+        seq_item_port      uvm_seq_item_pull_port  -     @1429
+      mon                  timer_vip_monitor       -     @1449
+        ap                 uvm_analysis_port       -     @1458
+      seqr                 timer_vip_sequencer     -     @1468
+        rsp_export         uvm_analysis_export     -     @1477
+        seq_item_export    uvm_seq_item_pull_imp   -     @1595
+        arbitration_queue  array                   0     -    
+        lock_queue         array                   0     -    
+        num_last_reqs      integral                32    'd1  
+        num_last_rsps      integral                32    'd1  
+    uart_agent             uart_vip_agent          -     @455 
+      drv                  uart_vip_driver         -     @1650
+        rsp_port           uvm_analysis_port       -     @1669
+        seq_item_port      uvm_seq_item_pull_port  -     @1659
+      mon                  uart_vip_monitor        -     @1612
+        ap                 uvm_analysis_port       -     @1621
+      sb                   uart_vip_scoreboard     -     @1631
+        mon_export         uvm_analysis_imp        -     @1640
+      seqr                 uart_vip_sequencer      -     @1679
+        rsp_export         uvm_analysis_export     -     @1688
+        seq_item_export    uvm_seq_item_pull_imp   -     @1806
+        arbitration_queue  array                   0     -    
+        lock_queue         array                   0     -    
+        num_last_reqs      integral                32    'd1  
+        num_last_rsps      integral                32    'd1  
+    v_seqr                 soc_virtual_sequencer   -     @509 
+      rsp_export           uvm_analysis_export     -     @518 
+      seq_item_export      uvm_seq_item_pull_imp   -     @636 
+      arbitration_queue    array                   0     -    
+      lock_queue           array                   0     -    
+      num_last_reqs        integral                32    'd1  
+      num_last_rsps        integral                32    'd1  
+--------------------------------------------------------------
+
+UVM_INFO ../../tb/vip/uart_vip_uvm_tb/uart_vip_driver.sv(35) @ 0: uvm_test_top.env.uart_agent.drv [uart_vip_driver] Waiting for reset release...
+UVM_INFO ../soc_uvm_env/uart_connectivity_test.sv(25) @ 0: uvm_test_top [uart_connectivity_test] ====================================================================
+UVM_INFO ../soc_uvm_env/uart_connectivity_test.sv(26) @ 0: uvm_test_top [uart_connectivity_test]  STARTING UART CONNECTIVITY TEST (Phase 2 End-to-End Verification)  
+UVM_INFO ../soc_uvm_env/uart_connectivity_test.sv(27) @ 0: uvm_test_top [uart_connectivity_test] ====================================================================
+UVM_INFO ../soc_uvm_env/uart_connectivity_test.sv(30) @ 0: uvm_test_top [uart_connectivity_test] Waiting for SoC reset deassertion...
+UVM_INFO ../tb/tb_soc_uvm_top.sv(54) @ 410000: reporter [TB] Reset deasserted. soc_dut running.
+UVM_INFO ../../tb/vip/uart_vip_uvm_tb/uart_vip_driver.sv(38) @ 810000: uvm_test_top.env.uart_agent.drv [uart_vip_driver] Reset released. Driver ready.
+UVM_INFO ../../tb/vip/uart_vip_uvm_tb/uart_vip_monitor.sv(36) @ 810000: uvm_test_top.env.uart_agent.mon [uart_vip_monitor] Reset released. Monitor active.
+UVM_INFO ../soc_uvm_env/uart_connectivity_test.sv(33) @ 2410000: uvm_test_top [uart_connectivity_test] Reset released. CPU and SoC peripherals active.
+UVM_INFO ../soc_uvm_env/uart_connectivity_test.sv(41) @ 2410000: uvm_test_top [uart_connectivity_test] Executing UART Connectivity Sequence on uart_agent.seqr...
+UVM_INFO ../../tb/vip/uart_vip_uvm_tb/uart_connectivity_sequence.sv(22) @ 2410000: uvm_test_top.env.uart_agent.seqr@@uart_seq [uart_connectivity_sequence] Starting UART Connectivity Sequence: data=0xa5, baud=115200, 8-N-1
+UVM_INFO ../../tb/vip/uart_vip_uvm_tb/uart_connectivity_sequence.sv(41) @ 2410000: uvm_test_top.env.uart_agent.seqr@@uart_seq [uart_connectivity_sequence] Sending item to driver: data=0xa5 (10100101) baud=115200 bits=8 stop=1 parity=NONE
+UVM_INFO ../../tb/vip/uart_vip_uvm_tb/uart_vip_driver.sv(61) @ 2410000: uvm_test_top.env.uart_agent.drv [uart_vip_driver] === BEGIN UART FRAME TX ===
+  Data       : 0xa5 (10100101, LSB first: 1,0,1,0,0,1,0,1)
+  Baud Rate  : 115200 baud
+  Bit Cycles : 434 clk ticks (8.68 us @ 50MHz)
+  Format     : 8-N-1
+  Start Time : 2410000
+UVM_INFO ../../tb/vip/uart_vip_uvm_tb/uart_vip_driver.sv(77) @ 2430000: uvm_test_top.env.uart_agent.drv [uart_vip_driver] Driving START bit (0) at 2430000 for 434 cycles
+UVM_INFO ../../tb/vip/uart_vip_uvm_tb/uart_vip_monitor.sv(60) @ 2430000: uvm_test_top.env.uart_agent.mon [uart_vip_monitor] Detected falling edge on uart_rx at 2430000 (START bit initiated)
+UVM_INFO ../../tb/vip/uart_vip_uvm_tb/uart_vip_monitor.sv(70) @ 6770000: uvm_test_top.env.uart_agent.mon [uart_vip_monitor] Verified valid START bit (0) at midpoint 6770000
+UVM_INFO ../../tb/vip/uart_vip_uvm_tb/uart_vip_driver.sv(83) @ 11110000: uvm_test_top.env.uart_agent.drv [uart_vip_driver] Driving DATA bit 0 = 1 at 11110000 for 434 cycles
+UVM_INFO ../../tb/vip/uart_vip_uvm_tb/uart_vip_monitor.sv(77) @ 15450000: uvm_test_top.env.uart_agent.mon [uart_vip_monitor] Sampled bit 0 = 1 at midpoint 15450000
+UVM_INFO ../../tb/vip/uart_vip_uvm_tb/uart_vip_driver.sv(83) @ 19790000: uvm_test_top.env.uart_agent.drv [uart_vip_driver] Driving DATA bit 1 = 0 at 19790000 for 434 cycles
+UVM_INFO ../../tb/vip/uart_vip_uvm_tb/uart_vip_monitor.sv(77) @ 24130000: uvm_test_top.env.uart_agent.mon [uart_vip_monitor] Sampled bit 1 = 0 at midpoint 24130000
+UVM_INFO ../../tb/vip/uart_vip_uvm_tb/uart_vip_driver.sv(83) @ 28470000: uvm_test_top.env.uart_agent.drv [uart_vip_driver] Driving DATA bit 2 = 1 at 28470000 for 434 cycles
+UVM_INFO ../../tb/vip/uart_vip_uvm_tb/uart_vip_monitor.sv(77) @ 32810000: uvm_test_top.env.uart_agent.mon [uart_vip_monitor] Sampled bit 2 = 1 at midpoint 32810000
+UVM_INFO ../../tb/vip/uart_vip_uvm_tb/uart_vip_driver.sv(83) @ 37150000: uvm_test_top.env.uart_agent.drv [uart_vip_driver] Driving DATA bit 3 = 0 at 37150000 for 434 cycles
+UVM_INFO ../../tb/vip/uart_vip_uvm_tb/uart_vip_monitor.sv(77) @ 41490000: uvm_test_top.env.uart_agent.mon [uart_vip_monitor] Sampled bit 3 = 0 at midpoint 41490000
+UVM_INFO ../../tb/vip/uart_vip_uvm_tb/uart_vip_driver.sv(83) @ 45830000: uvm_test_top.env.uart_agent.drv [uart_vip_driver] Driving DATA bit 4 = 0 at 45830000 for 434 cycles
+UVM_INFO ../../tb/vip/uart_vip_uvm_tb/uart_vip_monitor.sv(77) @ 50170000: uvm_test_top.env.uart_agent.mon [uart_vip_monitor] Sampled bit 4 = 0 at midpoint 50170000
+UVM_INFO ../../tb/vip/uart_vip_uvm_tb/uart_vip_driver.sv(83) @ 54510000: uvm_test_top.env.uart_agent.drv [uart_vip_driver] Driving DATA bit 5 = 1 at 54510000 for 434 cycles
+UVM_INFO ../../tb/vip/uart_vip_uvm_tb/uart_vip_monitor.sv(77) @ 58850000: uvm_test_top.env.uart_agent.mon [uart_vip_monitor] Sampled bit 5 = 1 at midpoint 58850000
+UVM_INFO ../../tb/vip/uart_vip_uvm_tb/uart_vip_driver.sv(83) @ 63190000: uvm_test_top.env.uart_agent.drv [uart_vip_driver] Driving DATA bit 6 = 0 at 63190000 for 434 cycles
+UVM_INFO ../../tb/vip/uart_vip_uvm_tb/uart_vip_monitor.sv(77) @ 67530000: uvm_test_top.env.uart_agent.mon [uart_vip_monitor] Sampled bit 6 = 0 at midpoint 67530000
+UVM_INFO ../../tb/vip/uart_vip_uvm_tb/uart_vip_driver.sv(83) @ 71870000: uvm_test_top.env.uart_agent.drv [uart_vip_driver] Driving DATA bit 7 = 1 at 71870000 for 434 cycles
+UVM_INFO ../../tb/vip/uart_vip_uvm_tb/uart_vip_monitor.sv(77) @ 76210000: uvm_test_top.env.uart_agent.mon [uart_vip_monitor] Sampled bit 7 = 1 at midpoint 76210000
+UVM_INFO ../../tb/vip/uart_vip_uvm_tb/uart_vip_driver.sv(99) @ 80550000: uvm_test_top.env.uart_agent.drv [uart_vip_driver] Driving STOP bit (1) at 80550000 for 434 cycles
+UVM_INFO ../../tb/vip/uart_vip_uvm_tb/uart_vip_monitor.sv(88) @ 84890000: uvm_test_top.env.uart_agent.mon [uart_vip_monitor] Verified valid STOP bit (1) at midpoint 84890000
+UVM_INFO ../../tb/vip/uart_vip_uvm_tb/uart_vip_monitor.sv(105) @ 88890000: uvm_test_top.env.uart_agent.mon [uart_vip_monitor] === UART MONITOR RECONSTRUCTED FRAME ===
+  Data       : 0xa5 (10100101, ASCII='?')
+  Framing    : VALID (Stop=1)
+  Duration   : 2430000 to 88890000
+
+UVM_INFO ../../tb/vip/uart_vip_uvm_tb/uart_vip_scoreboard.sv(104) @ 88890000: uvm_test_top.env.uart_agent.sb [uart_vip_scoreboard] 
++========================================================================+
+|             UART SCOREBOARD: END-TO-END VERIFICATION MATCH             |
++========================================================================+
+| Parameter              | Expected      | Observed      | Status        |
++------------------------+---------------+---------------+---------------+
+| Injected VIP Data      | 0xa5 (8'hA5)  | 0xa5          | MATCH         |
+| Monitor Decoded Byte   | 0xa5 (8'hA5)  | 0xa5          | MATCH         |
+| DUT RX FSM Latched Byte| 0xa5 (8'hA5)  | 0xa5          | MATCH         |
+| DUT Hardware FIFO[0]   | 0xa5 (8'hA5)  | 0xa5          | MATCH         |
+| DUT RX Write Pointer   | >= 1          | 1             | MATCH         |
+| DUT RX Committed Flag  | 1 (Committed) | 1             | MATCH         |
+| DUT CPU Popped (rptr)  | Observed      | 1             | MATCH         |
+| DUT Frame Error Flag   | 0 (No Error)  | 0             | MATCH         |
+| DUT Overrun Error Flag | 0 (No Error)  | 0             | MATCH         |
++========================================================================+
+| RESULT: PASS — Hardware peripheral received & decoded exact byte!      |
++========================================================================+
+
+UVM_INFO ../../tb/vip/uart_vip_uvm_tb/uart_vip_driver.sv(108) @ 97910000: uvm_test_top.env.uart_agent.drv [uart_vip_driver] === END UART FRAME TX === (Duration: 2410000 to 97910000 = 95.50 us)
+
+UVM_INFO ../../tb/vip/uart_vip_uvm_tb/uart_connectivity_sequence.sv(45) @ 97910000: uvm_test_top.env.uart_agent.seqr@@uart_seq [uart_connectivity_sequence] UART Connectivity Sequence completed for data=0xa5
+UVM_INFO ../soc_uvm_env/uart_connectivity_test.sv(48) @ 113910000: uvm_test_top [uart_connectivity_test] Checking UART Verification Results...
+UVM_INFO ../soc_uvm_env/uart_connectivity_test.sv(52) @ 113910000: uvm_test_top [uart_connectivity_test] 
+========================================================================
+ [UART VERIFICATION SIGN-OFF: SUCCESS]
+  Test Name           : uart_connectivity_test
+  Injected Byte       : 0xA5 (10100101b)
+  VIP Monitor Decoded : 0xA5 (8-N-1 @ 115200 baud)
+  DUT Peripheral FIFO : 0xA5 (soc_dut.u_uart.rx_fifo[0])
+  DUT Status Flags    : rx_count=1, rx_empty=0, frame_err=0, overrun=0
+  Scoreboard Matches  : 1 / 1
+  Overall Status      : TEST PASSED
+========================================================================
+UVM_INFO /home/student/snps_tools_target/vcs/U-2023.03/etc/uvm-1.2/base/uvm_objection.svh(1276) @ 114910000: reporter [TEST_DONE] 'run' phase is ready to proceed to the 'extract' phase
+UVM_INFO ../../tb/vip/uart_vip_uvm_tb/uart_vip_scoreboard.sv(129) @ 114910000: uvm_test_top.env.uart_agent.sb [uart_vip_scoreboard] 
++-------------------------------------------------------------+
+|                   UART SCOREBOARD SUMMARY                   |
++-------------------------------------------------------------+
+| Total Transactions Received : 1                             |
+| Total Matches               : 1                             |
+| Total Mismatches            : 0                             |
++-------------------------------------------------------------+
+
+UVM_INFO ../../tb/vip/uart_vip_uvm_tb/uart_vip_scoreboard.sv(135) @ 114910000: uvm_test_top.env.uart_agent.sb [uart_vip_scoreboard] *** UART END-TO-END FUNCTIONAL VERIFICATION: PASSED (0 ERRORS) ***
+UVM_INFO /home/student/snps_tools_target/vcs/U-2023.03/etc/uvm-1.2/base/uvm_report_catcher.svh(705) @ 114910000: reporter [UVM/REPORT/CATCHER] 
+--- UVM Report catcher Summary ---
+
+
+Number of demoted UVM_FATAL reports  :    0
+Number of demoted UVM_ERROR reports  :    0
+Number of demoted UVM_WARNING reports:    0
+Number of caught UVM_FATAL reports   :    0
+Number of caught UVM_ERROR reports   :    0
+Number of caught UVM_WARNING reports :    0
+
+UVM_INFO /home/student/snps_tools_target/vcs/U-2023.03/etc/uvm-1.2/base/uvm_report_server.svh(904) @ 114910000: reporter [UVM/REPORT/SERVER] 
+--- UVM Report Summary ---
+
+** Report counts by severity
+UVM_INFO :   54
+UVM_WARNING :    0
+UVM_ERROR :    0
+UVM_FATAL :    0
+** Report counts by id
+[RNTST]     1
+[SOC_ENV]     2
+[SOC_TEST]     1
+[SOC_VSEQR]     1
+[TB]     3
+[TB_WAVE]     1
+[TEST_DONE]     1
+[UVM/RELNOTES]     1
+[UVM/REPORT/CATCHER]     1
+[UVMTOP]     1
+[uart_connectivity_sequence]     3
+[uart_connectivity_test]     8
+[uart_vip_driver]    14
+[uart_vip_monitor]    13
+[uart_vip_scoreboard]     3
+
+$finish called from file "/home/student/snps_tools_target/vcs/U-2023.03/etc/uvm-1.2/base/uvm_root.svh", line 527.
+$finish at simulation time            114910000
+           V C S   S i m u l a t i o n   R e p o r t 
+Time: 114910000 ps
+CPU Time:      1.050 seconds;       Data structure size:   1.7Mb
+Sat Nov  7 14:25:07 2026

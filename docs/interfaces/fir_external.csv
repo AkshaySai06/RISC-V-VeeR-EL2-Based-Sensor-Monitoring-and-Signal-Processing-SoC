@@ -1,0 +1,9 @@
+signal_name,direction,width
+clk,input,1
+rst_n,input,1
+sample_in,input,16
+sample_valid,input,1
+sample_ready,output,1
+filtered_out,output,16
+filtered_valid,output,1
+irq,output,1

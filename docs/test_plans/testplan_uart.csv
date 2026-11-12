@@ -1,0 +1,32 @@
+SNo.,Test Name,Description,Checkpoints,C Test Output,C Test Expected Output,SV Test Output,SV Test Expected Output,Internal,External,Interfaces Required
+TC-01,Reset and CPU Boot,Verify reset initializes the SoC and VeeR EL2 starts executing firmware from the configured reset vector.,"• Assert reset and release it synchronously;
+• verify reset vector is 0x0000_0000;
+• observe instruction fetch and PC progression;
+• detect firmware boot/UART marker;
+• enforce a finite boot timeout.",Not Run,Firmware boots successfully and emits the expected startup banner/marker within the simulation timeout.,Not Run,Reset and first fetch are correct; CPU progresses without X-propagation or watchdog timeout.,No,Yes,UART TX (boot marker)
+TC-06,UART Initialization and Transmission,Verify UART register programming and serial transmission of known firmware status/telemetry messages.,"• Configure baud divisor and TX enable using the confirmed register map;
+• write known characters/string;
+• observe TX start, 8 data bits, and stop bit (8-N-1);
+• decode serial output at configured baud;
+• check FIFO/status behavior and bounded polling.",Not Run,UART initialization succeeds and expected startup/status/telemetry text is transmitted.,Not Run,AXI register accesses complete and TX waveform decodes to the expected characters with correct framing/baud.,No,Yes,"AXI4-Lite, UART TX,"
+TC-13,Peripheral Interrupt and PIC Connectivity,Verify enabled peripheral interrupt sources are propagated to the VeeR EL2 interrupt controller.,"• Identify interrupt sources implemented and connected in soc_top;
+• enable a supported timer/GPIO/UART/FIR/PWM interrupt;
+• generate the corresponding event;
+• observe interrupt request at the core/PIC boundary;
+• verify clear/acknowledge behavior and no persistent spurious interrupt.",Not Run,Firmware handles supported interrupt events correctly if interrupt-driven operation is enabled in the test.,Not Run,"Interrupt request reaches the configured PIC input, is observable by the core and clears according to the peripheral protocol.",Yes,No,N/A – internal verification
+TC-14,Firmware Sensor-to-Actuator Data Path,Verify the complete firmware sequence: timer scheduling → I2C sensor acquisition → FIR processing → PWM duty update → UART telemetry.,"• Run the supplied firmware and sensor model;
+• provide deterministic sensor samples;
+• verify each sample is read over I2C;
+• verify sample is written to FIR and DONE is observed;
+• verify filtered result maps to PWM duty;
+• verify periodic UART telemetry.",Not Run,Firmware completes the intended sensor-monitoring sequence and reports expected raw/filtered/duty values.,Not Run,"Waveforms/logs demonstrate the expected sequence across timer, I2C, FIR, PWM and UART with correct values and handshakes.",No,Yes,"Timer,  I2C SCL/SDA, FIR data/control, PWM output, UART TX"
+TC-15,Firmware Completion and Watchdog/Timeout Handling,Verify firmware reaches its terminal PASS condition and simulation does not hang indefinitely.,"• Execute the configured 50 sample iterations;
+• check periodic telemetry every 10 iterations;
+• detect final PASS marker;
+• verify watchdog bound (500,000 cycles) is effective;
+• exercise or observe a supported timeout/error path where feasible.",Not Run,Firmware reports the 50-iteration completion marker and terminates normally within the global simulation bound.,Not Run,Testbench detects terminal PASS; missing completion triggers bounded watchdog failure rather than an indefinite simulation.,No,Yes,"UART TX (if used),"
+TC-17,Full SoC Regression and End-to-End Sign-Off,Run all unit-level IP/bus tests followed by the integrated SoC firmware test to validate the complete design.,"• Run all 11 documented unit testbenches;
+• run tb_soc_top with sw/main.hex;
+• retain VCS logs and waveform evidence;
+• confirm each test reports PASS or a documented failure;
+• check no unexpected X/Z, fatal error or timeout.",Not Run,All required firmware-level checks pass and the complete application reaches its terminal success marker.,Not Run,"All applicable unit tests and full SoC integration test pass; no unexplained protocol errors, X-propagation or watchdog timeout.",No,Yes,"UART TX, I2C SCL/SDA, GPIO pins, PWM output,"

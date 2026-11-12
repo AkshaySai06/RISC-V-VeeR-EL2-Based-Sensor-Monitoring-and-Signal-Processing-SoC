@@ -1,0 +1,17 @@
+SNo.,Test Name,Description,Checkpoints,C Test Output,C Test Expected Output,SV Test Output,SV Test Expected Output,Internal,External,Interfaces Required
+TC-09,I2C Master and Sensor Read,Verify I2C master initialization and communication with the modeled sensor at address 0x48.,"• Program prescaler and enable control;
+• issue START, address, register write/read and STOP commands;
+• verify open-drain SCL/SDA behavior and ACK/NACK;
+• use the sensor model for a known 16-bit signed sample;
+• check TIP/IF/BUSY status and bounded completion.",Not Run,Firmware reads the expected sensor sample through i2c_read_sensor() without hanging or reporting an unexpected NACK.,Not Run,"I2C command sequencing, open-drain signaling, ACK handling and received sample value match the sensor model.",No,Yes,"I2C SCL, I2C SDA,"
+TC-14,Firmware Sensor-to-Actuator Data Path,Verify the complete firmware sequence: timer scheduling → I2C sensor acquisition → FIR processing → PWM duty update → UART telemetry.,"• Run the supplied firmware and sensor model;
+• provide deterministic sensor samples;
+• verify each sample is read over I2C;
+• verify sample is written to FIR and DONE is observed;
+• verify filtered result maps to PWM duty;
+• verify periodic UART telemetry.",Not Run,Firmware completes the intended sensor-monitoring sequence and reports expected raw/filtered/duty values.,Not Run,"Waveforms/logs demonstrate the expected sequence across timer, I2C, FIR, PWM and UART with correct values and handshakes.",No,Yes,"Timer,  I2C SCL/SDA, FIR data/control, PWM output, UART TX"
+TC-17,Full SoC Regression and End-to-End Sign-Off,Run all unit-level IP/bus tests followed by the integrated SoC firmware test to validate the complete design.,"• Run all 11 documented unit testbenches;
+• run tb_soc_top with sw/main.hex;
+• retain VCS logs and waveform evidence;
+• confirm each test reports PASS or a documented failure;
+• check no unexpected X/Z, fatal error or timeout.",Not Run,All required firmware-level checks pass and the complete application reaches its terminal success marker.,Not Run,"All applicable unit tests and full SoC integration test pass; no unexplained protocol errors, X-propagation or watchdog timeout.",No,Yes,"UART TX, I2C SCL/SDA, GPIO pins, PWM output,"

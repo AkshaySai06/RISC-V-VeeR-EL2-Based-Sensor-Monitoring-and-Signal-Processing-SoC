@@ -1,0 +1,17 @@
+Command: /home/student/Documents/Honours_project-akshay/Honours_project/sim/./simv_tb_fir -l tb_fir.log
+Chronologic VCS simulator copyright 1991-2023
+Contains Synopsys proprietary information.
+Compiler version U-2023.03_Full64; Runtime version U-2023.03_Full64;  Oct 31 14:10 2026
+=== [TEST] tb_fir START ===
+[Test 1] Verify TAPS register
+[Test 2] Loading 16 coefficients with auto-increment
+[Test 4] Verifying Impulse Response
+[Test 5] Test FLUSH delay line
+[Test 6] Write while BUSY returns SLVERR
+=== [TEST] tb_fir: PASS ===
+$finish called from file "../tb/unit/tb_fir.sv", line 209.
+$finish at simulation time             13450000
+           V C S   S i m u l a t i o n   R e p o r t 
+Time: 13450000 ps
+CPU Time:      0.130 seconds;       Data structure size:   0.2Mb
+Sat Oct 31 14:10:02 2026

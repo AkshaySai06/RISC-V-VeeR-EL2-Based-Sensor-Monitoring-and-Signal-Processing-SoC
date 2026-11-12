@@ -1,0 +1,159 @@
+Command: /home/student/Documents/akshay_honours/Honours_project/sim/./simv_soc_uvm +UVM_TESTNAME=soc_test +HEX_FILE=../sw/main.hex -l soc_test_run.log
+Chronologic VCS simulator copyright 1991-2023
+Contains Synopsys proprietary information.
+Compiler version U-2023.03_Full64; Runtime version U-2023.03_Full64;  Nov  7 12:21 2026
+UVM_INFO /home/student/snps_tools_target/vcs/U-2023.03/etc/uvm-1.2/base/uvm_root.svh(402) @ 0: reporter [UVM/RELNOTES] 
+----------------------------------------------------------------
+UVM-1.2.Synopsys
+(C) 2007-2014 Mentor Graphics Corporation
+(C) 2007-2014 Cadence Design Systems, Inc.
+(C) 2006-2014 Synopsys, Inc.
+(C) 2011-2013 Cypress Semiconductor Corp.
+(C) 2013-2014 NVIDIA Corporation
+----------------------------------------------------------------
+
+  ***********       IMPORTANT RELEASE NOTES         ************
+
+  You are using a version of the UVM library that has been compiled
+  with `UVM_NO_DEPRECATED undefined.
+  See http://www.eda.org/svdb/view.php?id=3313 for more details.
+
+  You are using a version of the UVM library that has been compiled
+  with `UVM_OBJECT_DO_NOT_NEED_CONSTRUCTOR undefined.
+  See http://www.eda.org/svdb/view.php?id=3770 for more details.
+
+      (Specify +UVM_NO_RELNOTES to turn off this notice)
+
+UVM_INFO ../soc_uvm/tb/tb_soc_uvm_top.sv(118) @ 0: reporter [TB] Preloading IMEM from ../sw/main.hex ...
+UVM_INFO ../soc_uvm/tb/tb_soc_uvm_top.sv(120) @ 0: reporter [TB] IMEM preload complete.
+UVM_INFO @ 0: reporter [RNTST] Running test soc_test...
+UVM_INFO ../soc_uvm/soc_uvm_env/soc_test.sv(57) @ 0: uvm_test_top [SOC_TEST] soc_test build_phase complete: config retrieved, env created.
+UVM_INFO ../soc_uvm/soc_uvm_env/soc_env.sv(79) @ 0: uvm_test_top.env [SOC_ENV] SoC UVM Environment built: 6 VIP agents + virtual sequencer.
+UVM_INFO ../soc_uvm/soc_uvm_env/soc_virtual_sequencer.sv(30) @ 0: uvm_test_top.env.v_seqr [SOC_VSEQR] SoC Virtual Sequencer created.
+UVM_INFO ../soc_uvm/soc_uvm_env/soc_env.sv(122) @ 0: uvm_test_top.env [SOC_ENV] connect_phase: VIP sequencers and virtual interfaces connected successfully.
+UVM_INFO /home/student/snps_tools_target/vcs/U-2023.03/etc/uvm-1.2/base/uvm_root.svh(589) @ 0: reporter [UVMTOP] UVM testbench topology:
+--------------------------------------------------------------
+Name                       Type                    Size  Value
+--------------------------------------------------------------
+uvm_test_top               soc_test                -     @401 
+  env                      soc_env                 -     @431 
+    fir_agent              fir_vip_agent           -     @488 
+      drv                  fir_vip_driver          -     @657 
+        rsp_port           uvm_analysis_port       -     @676 
+        seq_item_port      uvm_seq_item_pull_port  -     @666 
+      mon                  fir_vip_monitor         -     @686 
+        ap                 uvm_analysis_port       -     @695 
+      seqr                 fir_vip_sequencer       -     @705 
+        rsp_export         uvm_analysis_export     -     @714 
+        seq_item_export    uvm_seq_item_pull_imp   -     @832 
+        arbitration_queue  array                   0     -    
+        lock_queue         array                   0     -    
+        num_last_reqs      integral                32    'd1  
+        num_last_rsps      integral                32    'd1  
+    gpio_agent             gpio_vip_agent          -     @461 
+      drv                  gpio_vip_driver         -     @847 
+        rsp_port           uvm_analysis_port       -     @866 
+        seq_item_port      uvm_seq_item_pull_port  -     @856 
+      mon                  gpio_vip_monitor        -     @876 
+        ap                 uvm_analysis_port       -     @885 
+      seqr                 gpio_vip_sequencer      -     @895 
+        rsp_export         uvm_analysis_export     -     @904 
+        seq_item_export    uvm_seq_item_pull_imp   -     @1022
+        arbitration_queue  array                   0     -    
+        lock_queue         array                   0     -    
+        num_last_reqs      integral                32    'd1  
+        num_last_rsps      integral                32    'd1  
+    i2c_agent              i2c_vip_agent           -     @470 
+      drv                  i2c_vip_driver          -     @1037
+        rsp_port           uvm_analysis_port       -     @1056
+        seq_item_port      uvm_seq_item_pull_port  -     @1046
+      mon                  i2c_vip_monitor         -     @1066
+        ap                 uvm_analysis_port       -     @1075
+      seqr                 i2c_vip_sequencer       -     @1085
+        rsp_export         uvm_analysis_export     -     @1094
+        seq_item_export    uvm_seq_item_pull_imp   -     @1212
+        arbitration_queue  array                   0     -    
+        lock_queue         array                   0     -    
+        num_last_reqs      integral                32    'd1  
+        num_last_rsps      integral                32    'd1  
+    pwm_agent              pwm_vip_agent           -     @497 
+      drv                  pwm_vip_driver          -     @1227
+        rsp_port           uvm_analysis_port       -     @1246
+        seq_item_port      uvm_seq_item_pull_port  -     @1236
+      mon                  pwm_vip_monitor         -     @1256
+        ap                 uvm_analysis_port       -     @1265
+      seqr                 pwm_vip_sequencer       -     @1275
+        rsp_export         uvm_analysis_export     -     @1284
+        seq_item_export    uvm_seq_item_pull_imp   -     @1402
+        arbitration_queue  array                   0     -    
+        lock_queue         array                   0     -    
+        num_last_reqs      integral                32    'd1  
+        num_last_rsps      integral                32    'd1  
+    timer_agent            timer_vip_agent         -     @479 
+      drv                  timer_vip_driver        -     @1417
+        rsp_port           uvm_analysis_port       -     @1436
+        seq_item_port      uvm_seq_item_pull_port  -     @1426
+      mon                  timer_vip_monitor       -     @1446
+        ap                 uvm_analysis_port       -     @1455
+      seqr                 timer_vip_sequencer     -     @1465
+        rsp_export         uvm_analysis_export     -     @1474
+        seq_item_export    uvm_seq_item_pull_imp   -     @1592
+        arbitration_queue  array                   0     -    
+        lock_queue         array                   0     -    
+        num_last_reqs      integral                32    'd1  
+        num_last_rsps      integral                32    'd1  
+    uart_agent             uart_vip_agent          -     @452 
+      drv                  uart_vip_driver         -     @1607
+        rsp_port           uvm_analysis_port       -     @1626
+        seq_item_port      uvm_seq_item_pull_port  -     @1616
+      mon                  uart_vip_monitor        -     @1636
+        ap                 uvm_analysis_port       -     @1645
+      seqr                 uart_vip_sequencer      -     @1655
+        rsp_export         uvm_analysis_export     -     @1664
+        seq_item_export    uvm_seq_item_pull_imp   -     @1782
+        arbitration_queue  array                   0     -    
+        lock_queue         array                   0     -    
+        num_last_reqs      integral                32    'd1  
+        num_last_rsps      integral                32    'd1  
+    v_seqr                 soc_virtual_sequencer   -     @506 
+      rsp_export           uvm_analysis_export     -     @515 
+      seq_item_export      uvm_seq_item_pull_imp   -     @633 
+      arbitration_queue    array                   0     -    
+      lock_queue           array                   0     -    
+      num_last_reqs        integral                32    'd1  
+      num_last_rsps        integral                32    'd1  
+--------------------------------------------------------------
+
+UVM_INFO ../soc_uvm/soc_uvm_env/soc_test.sv(68) @ 0: uvm_test_top [SOC_TEST] run_phase started — running base virtual sequence.
+UVM_INFO ../soc_uvm/soc_uvm_env/soc_virtual_sequence.sv(32) @ 0: uvm_test_top.env.v_seqr@@v_seq [SOC_VSEQ] soc_virtual_sequence base body — no transactions scheduled (integration check only).
+UVM_INFO ../soc_uvm/tb/tb_soc_uvm_top.sv(53) @ 410000: reporter [TB] Reset deasserted. soc_dut running.
+UVM_INFO ../soc_uvm/soc_uvm_env/soc_test.sv(76) @ 500000: uvm_test_top [SOC_TEST] ==================================================================
+UVM_INFO ../soc_uvm/soc_uvm_env/soc_test.sv(79) @ 500000: uvm_test_top [SOC_TEST]  [INTEGRATION CHECK] soc_test completed successfully: PASS
+UVM_INFO ../soc_uvm/soc_uvm_env/soc_test.sv(82) @ 500000: uvm_test_top [SOC_TEST]  All six VIP agents instantiated and virtual interfaces verified.
+UVM_INFO ../soc_uvm/soc_uvm_env/soc_test.sv(85) @ 500000: uvm_test_top [SOC_TEST] ==================================================================
+UVM_INFO /home/student/snps_tools_target/vcs/U-2023.03/etc/uvm-1.2/base/uvm_objection.svh(1276) @ 500000: reporter [TEST_DONE] 'run' phase is ready to proceed to the 'extract' phase
+UVM_INFO /home/student/snps_tools_target/vcs/U-2023.03/etc/uvm-1.2/base/uvm_report_server.svh(904) @ 500000: reporter [UVM/REPORT/SERVER] 
+--- UVM Report Summary ---
+
+** Report counts by severity
+UVM_INFO :   17
+UVM_WARNING :    0
+UVM_ERROR :    0
+UVM_FATAL :    0
+** Report counts by id
+[RNTST]     1
+[SOC_ENV]     2
+[SOC_TEST]     6
+[SOC_VSEQ]     1
+[SOC_VSEQR]     1
+[TB]     3
+[TEST_DONE]     1
+[UVM/RELNOTES]     1
+[UVMTOP]     1
+
+$finish called from file "/home/student/snps_tools_target/vcs/U-2023.03/etc/uvm-1.2/base/uvm_root.svh", line 527.
+$finish at simulation time               500000
+           V C S   S i m u l a t i o n   R e p o r t 
+Time: 500000 ps
+CPU Time:      0.150 seconds;       Data structure size:   1.1Mb
+Sat Nov  7 12:21:16 2026

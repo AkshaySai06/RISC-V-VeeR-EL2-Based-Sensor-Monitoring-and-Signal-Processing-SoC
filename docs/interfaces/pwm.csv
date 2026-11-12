@@ -1,0 +1,5 @@
+signal_name,direction,width
+clk,input,1
+rst_n,input,1
+pwm_out,output,1
+irq,output,1

@@ -1,0 +1,99 @@
+Command: /home/student/Documents/akshay_honours/Honours_project/sim/./simv_vip_smoke +HEX_FILE=../sw/main.hex -l vip_smoke_run.log
+Chronologic VCS simulator copyright 1991-2023
+Contains Synopsys proprietary information.
+Compiler version U-2023.03_Full64; Runtime version U-2023.03_Full64;  Nov  7 11:09 2026
+UVM_INFO /home/student/snps_tools_target/vcs/U-2023.03/etc/uvm-1.2/base/uvm_root.svh(402) @ 0: reporter [UVM/RELNOTES] 
+----------------------------------------------------------------
+UVM-1.2.Synopsys
+(C) 2007-2014 Mentor Graphics Corporation
+(C) 2007-2014 Cadence Design Systems, Inc.
+(C) 2006-2014 Synopsys, Inc.
+(C) 2011-2013 Cypress Semiconductor Corp.
+(C) 2013-2014 NVIDIA Corporation
+----------------------------------------------------------------
+
+  ***********       IMPORTANT RELEASE NOTES         ************
+
+  You are using a version of the UVM library that has been compiled
+  with `UVM_NO_DEPRECATED undefined.
+  See http://www.eda.org/svdb/view.php?id=3313 for more details.
+
+  You are using a version of the UVM library that has been compiled
+  with `UVM_OBJECT_DO_NOT_NEED_CONSTRUCTOR undefined.
+  See http://www.eda.org/svdb/view.php?id=3770 for more details.
+
+      (Specify +UVM_NO_RELNOTES to turn off this notice)
+
+[TB] Loading custom firmware from: ../sw/main.hex
+[TB] Preloading IMEM from ../sw/main.hex ...
+[TB] IMEM preload complete.
+
+========================================================
+ [SMOKE TEST 1] RESET CHECK
+========================================================
+UVM_INFO @ 0: reporter [RNTST] Running test vip_smoke_test...
+UVM_INFO ../tb/tb_vip_smoke_top.sv(180) @ 0: uvm_test_top [VIP_SMOKE] All six VIP agents successfully created and connected.
+UVM_INFO ../tb/tb_vip_smoke_top.sv(192) @ 10000: uvm_test_top [VIP_SMOKE] All six VIP sequencers and drivers confirmed operational.
+[DEBUG RESET] uart_tx=1 ctrl_tx_en=1 dir=0000 data_out=0000 i2c_en=0 timer_en=1 fir_done=0 pwm_en=0 pwm_out=0
+[TEST 1: RESET CHECK] Peripheral reset states verified successfully: PASS.
+[TB] Reset deasserted. CPU starts execution at PC=0x00000000.
+
+[SMOKE TEST 2] Starting UART communication verification...
+[TEST 2: UART] Detected UART enabled at 115200 baud (bauddiv=434)
+[SMOKE TEST 3] Starting GPIO stimulus and direction observation...
+[SMOKE TEST 4] Starting I2C transaction monitor...
+[SMOKE TEST 5] Starting Timer counter progression check...
+[TEST 5: TIMER] Timer enabled: prescale=49
+[SMOKE TEST 6] Starting FIR Filter execution verification...
+[SMOKE TEST 7] Starting PWM duty cycle measurement...
+[TEST 6: FIR] FIR enabled. Coefficients loaded, shift=15
+[TEST 7: PWM] PWM enabled: period_shadow=999 prescale=49
+[TEST 3: GPIO] Direction register configured: dir=0x00ff (lower 8 output, upper 8 input)
+[TEST 3: GPIO] Firmware output pattern observed: gpio_out=0x00aa
+[TEST 3: GPIO] Input stimulus, output observation, and direction control verified: PASS.
+[TEST 5: TIMER] Counter progression verified: initial=0 later=60 (increments monotonically: PASS)
+[TEST 2: UART] VIP driving stimulus byte 8'hA5 into DUT uart_rx (8-N-1)...
+[TEST 2: UART] VIP stimulus byte 8'hA5 transmitted.
+[UART CONSOLE] 
+[TEST 2: UART] Framing, baud timing, and bidirectional activity PASS.
+[UART CONSOLE] [SoC] PASS! VeeR EL2 Online
+[UART CONSOLE] ========================================
+[UART CONSOLE]  VeeR EL2 Sensor Monitoring & Signal SoC
+[UART CONSOLE]  Interconnect: AXI4-Lite (32-bit)
+[UART CONSOLE]  Core: RV32IMC VeeR EL2 (Synopsys/VCS Ready)
+[TEST 4: I2C] I2C START condition detected on bus.
+[TEST 4: I2C] Target slave address match: 7'h48 (R/W=0)
+[TEST 6: FIR] Sample written to FIR: sample=0x0000
+[TEST 6: FIR] FIR transitioned to BUSY state (MAC computation).
+[TEST 6: FIR] FIR asserted DONE status: filtered_out=0x0000 (0)
+[TEST 6: FIR] FIR processing status and output verified: PASS.
+[TEST 4: I2C] I2C STOP condition detected on bus.
+[TEST 4: I2C] Sensor communication transaction verified: PASS.
+[UART CONSOLE] ========================================
+[UART CONSOLE] 
+[TEST 7: PWM] Measured High=500000000 Period=1000000000 | Measured Duty=50.00% Expected=50.00%
+[TEST 7: PWM] PWM output waveform and duty cycle match: PASS.
+
+========================================================
+ [VIP SMOKE TEST SUITE] ALL 7 TESTS COMPLETED SUCCESSFULLY!
+========================================================
+
+==================================================================
+          SIX PERIPHERAL VIP INTEGRATION SMOKE TEST REPORT        
+==================================================================
+| VIP      | Connection   | Compilation  | Simulation   |
+|----------|--------------|--------------|--------------|
+| UART     | PASS         | PASS         | PASS         |
+| GPIO     | PASS         | PASS         | PASS         |
+| I2C      | PASS         | PASS         | PASS         |
+| Timer    | PASS         | PASS         | PASS         |
+| FIR      | PASS         | PASS         | PASS         |
+| PWM      | PASS         | PASS         | PASS         |
+==================================================================
+=== [TEST] tb_vip_smoke_top: PASS ===
+$finish called from file "../tb/tb_vip_smoke_top.sv", line 696.
+$finish at simulation time          22652190000
+           V C S   S i m u l a t i o n   R e p o r t 
+Time: 22652190000 ps
+CPU Time:     10.220 seconds;       Data structure size:   1.2Mb
+Sat Nov  7 11:09:13 2026

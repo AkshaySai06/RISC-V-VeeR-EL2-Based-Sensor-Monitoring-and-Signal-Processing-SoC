@@ -1,0 +1,10 @@
+signal_name,direction,width
+clk,input,1
+rst_n,input,1
+scl_i,input,1
+scl_o,output,1
+scl_oe,output,1
+sda_i,input,1
+sda_o,output,1
+sda_oe,output,1
+irq,output,1

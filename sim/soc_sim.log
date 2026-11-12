@@ -1,0 +1,16 @@
+Command: /home/student/Documents/Honours_project-akshay/Honours_project/sim/./simv_soc +HEX_FILE=../sw/main.hex -l soc_sim.log
+Chronologic VCS simulator copyright 1991-2023
+Contains Synopsys proprietary information.
+Compiler version U-2023.03_Full64; Runtime version U-2023.03_Full64;  Oct 31 14:36 2026
+[TB] Loading custom firmware from: ../sw/main.hex
+[TB] Preloading IMEM from ../sw/main.hex ...
+[TB] IMEM preload complete.
+[TB] Reset deasserted. VeeR EL2 starts at PC=0x00000000.
+[TB] *** Firmware transmitted 'PASS' via UART! ***
+=== [TEST] tb_soc_top: PASS ===
+$finish called from file "../tb/tb_soc_top.sv", line 191.
+$finish at simulation time            860390000
+           V C S   S i m u l a t i o n   R e p o r t 
+Time: 860390000 ps
+CPU Time:      0.430 seconds;       Data structure size:   1.0Mb
+Sat Oct 31 14:36:35 2026

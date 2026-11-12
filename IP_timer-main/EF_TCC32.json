@@ -1,0 +1,192 @@
+{
+    "info": {
+        "name": "EF_TCC32",
+        "description": "A 32-bit Timer/Counter/Capture peripheral.",
+        "repo": "github.com/efabless/EF_TMR32",
+        "owner": "Efabless Corp.",
+        "license": "Apache 2.0",
+        "author": "Mohamed Shalan",
+        "email": "mshalan@efabless.com",
+        "version": "v1.0.0",
+        "date": "3-18-2023",
+        "category": "digital",
+        "tags": [
+            "peripheral",
+            "timer",
+            "counter",
+            "capture"
+        ],
+        "bus": [
+            "generic"
+        ],
+        "type": "soft",
+        "status": "verified",
+        "cell_count": "690",
+        "width": "0.0",
+        "height": "0.0",
+        "technology": "n/a",
+        "clock_freq_mhz": "10",
+        "supply_voltage": [
+            "n/a"
+        ],
+        "tech":[
+            "sky130":{
+                "gl_netlist": true,
+                "cell_count": "1190",
+                "is":"2.9",
+                "id":"23777"
+            }
+        ]
+    },
+    "regs": [
+        {
+            "name": "timer",
+            "size": "32",
+            "mode": "ro",
+            "fields": [
+                {
+                    "name": "timer",
+                    "from": "0",
+                    "size": "32",
+                    "port": "tmr"
+                }
+            ]
+        },
+        {
+            "name": "period",
+            "size": "32",
+            "mode": "rw",
+            "init": "0",
+            "fields": [
+                {
+                    "name": "period",
+                    "from": "0",
+                    "size": "32",
+                    "port": "period"
+                }
+            ]
+        },
+        {
+            "name": "counter",
+            "size": "32",
+            "mode": "ro",
+            "fields": [
+                {
+                    "name": "cp_count",
+                    "from": "0",
+                    "size": "32",
+                    "port": "cp_count"
+                }
+            ]
+        },
+        {
+            "name": "counter_match",
+            "size": "32",
+            "mode": "rw",
+            "init": "0",
+            "fields": [
+                {
+                    "name": "ctr_match",
+                    "from": "0",
+                    "size": "32",
+                    "port": "ctr_match"
+                }
+            ]
+        },
+        {
+            "name": "control",
+            "size": "32",
+            "mode": "rw",
+            "init": "0",
+            "fields": [
+                {
+                    "name": "en",
+                    "from": "0",
+                    "size": "1",
+                    "port": "en"
+                },
+                {
+                    "name": "timer_en",
+                    "from": "1",
+                    "size": "1",
+                    "port": "tmr_en"
+                },
+                {
+                    "name": "cp_en",
+                    "from": "3",
+                    "size": "1",
+                    "port": "cp_en"
+                },
+                {
+                    "name": "clk_src",
+                    "from": "8",
+                    "size": "4",
+                    "port": "clk_src"
+                },
+                {
+                    "name": "up_down",
+                    "from": "16",
+                    "size": "1",
+                    "port": "up"
+                },
+                {
+                    "name": "one_shot",
+                    "from": "17",
+                    "size": "1",
+                    "port": "one_shot"
+                },
+                {
+                    "name": "cp_event",
+                    "from": "24",
+                    "size": "2",
+                    "port": "cp_event"
+                }
+            ]
+        }
+    ],
+    "interface": [
+        {
+            "name": "ext_clk",
+            "port": "ctr_in",
+            "dir": "input",
+            "size": "1"
+        }
+    ],
+    "flags": [
+        {
+            "name": "to",
+            "port": "to_flag"
+        },
+        {
+            "name": "cp",
+            "port": "cp_flag"
+        },
+        {
+            "name": "match",
+            "port": "match_flag"
+        }
+        
+    ],
+    "clock": "clk",
+    "reset": {
+        "name": "rst_n",
+        "pol": "0"
+    },
+    "ports":[
+      {"name": "ctr_in", "size": "1"},
+      {"name": "period", "size": "32"},
+      {"name": "ctr_match", "size": "32"},
+      {"name": "tmr", "size": "32"},
+      {"name": "cp_count", "size": "32"},
+      {"name": "clk_src", "size": "4"},
+      {"name": "to_flag", "size": "1"},
+      {"name": "match_flag", "size": "1"},
+      {"name": "tmr_en", "size": "1"},
+      {"name": "one_shot", "size": "1"},
+      {"name": "up", "size": "1"},
+      {"name": "cp_en", "size": "1"},
+      {"name": "cp_event", "size": "2"},
+      {"name": "cp_flag", "size": "1"},
+      {"name": "en", "size": "1"}
+    ]
+}

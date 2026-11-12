@@ -1,0 +1,43 @@
+SNo.,Test Name,Description,Checkpoints,C Test Output,C Test Expected Output,SV Test Output,SV Test Expected Output,Internal,External,Interfaces Required
+TC-01,Reset and CPU Boot,Verify reset initializes the SoC and VeeR EL2 starts executing firmware from the configured reset vector.,"• Assert reset and release it synchronously;
+• verify reset vector is 0x0000_0000;
+• observe instruction fetch and PC progression;
+• detect firmware boot/UART marker;
+• enforce a finite boot timeout.",Not Run,Firmware boots successfully and emits the expected startup banner/marker within the simulation timeout.,Not Run,Reset and first fetch are correct; CPU progresses without X-propagation or watchdog timeout.,No,Yes,UART TX (boot marker)
+TC-06,UART Initialization and Transmission,Verify UART register programming and serial transmission of known firmware status/telemetry messages.,"• Configure baud divisor and TX enable using the confirmed register map;
+• write known characters/string;
+• observe TX start, 8 data bits, and stop bit (8-N-1);
+• decode serial output at configured baud;
+• check FIFO/status behavior and bounded polling.",Not Run,UART initialization succeeds and expected startup/status/telemetry text is transmitted.,Not Run,AXI register accesses complete and TX waveform decodes to the expected characters with correct framing/baud.,No,Yes,"AXI4-Lite, UART TX,"
+TC-08,GPIO Register Access and Pin Behavior,"Verify GPIO direction, output, input synchronization and supported interrupt/edge functions.","• Configure selected GPIO bits as outputs;
+• write known patterns and observe output pins;
+• drive input pins and verify synchronized DATA_IN readback;
+• test edge/level interrupt status and mask if implemented;
+• account for GPIO width and polarity.",Not Run,Firmware GPIO accesses complete and supported output/readback behavior matches the programmed values.,Not Run,"Register transactions complete; output pins, synchronized inputs and enabled interrupt status behave as specified.",No,Yes,"AXI4-Lite, GPIO input pins, GPIO output pins,"
+TC-09,I2C Master and Sensor Read,Verify I2C master initialization and communication with the modeled sensor at address 0x48.,"• Program prescaler and enable control;
+• issue START, address, register write/read and STOP commands;
+• verify open-drain SCL/SDA behavior and ACK/NACK;
+• use the sensor model for a known 16-bit signed sample;
+• check TIP/IF/BUSY status and bounded completion.",Not Run,Firmware reads the expected sensor sample through i2c_read_sensor() without hanging or reporting an unexpected NACK.,Not Run,"I2C command sequencing, open-drain signaling, ACK handling and received sample value match the sensor model.",No,Yes,"I2C SCL, I2C SDA,"
+TC-12,PWM Configuration and Output Generation,"Verify PWM period, duty, prescaler, enable, polarity and output waveform generation.","• Program period and prescaler;
+• apply minimum, midpoint and maximum legal duty values;
+• enable PWM and observe output;
+• measure period and high-time/duty ratio;
+• test polarity/force/status features if supported;
+• verify double-buffered updates take effect at the specified boundary.",Not Run,Firmware maps filtered signed samples to legal PWM duty values and updates the actuator output.,Not Run,"PWM waveform period, duty ratio, polarity and update timing match programmed register values.",No,Yes,"AXI4-Lite, PWM output pin,"
+TC-14,Firmware Sensor-to-Actuator Data Path,Verify the complete firmware sequence: timer scheduling → I2C sensor acquisition → FIR processing → PWM duty update → UART telemetry.,"• Run the supplied firmware and sensor model;
+• provide deterministic sensor samples;
+• verify each sample is read over I2C;
+• verify sample is written to FIR and DONE is observed;
+• verify filtered result maps to PWM duty;
+• verify periodic UART telemetry.",Not Run,Firmware completes the intended sensor-monitoring sequence and reports expected raw/filtered/duty values.,Not Run,"Waveforms/logs demonstrate the expected sequence across timer, I2C, FIR, PWM and UART with correct values and handshakes.",No,Yes,"Timer,  I2C SCL/SDA, FIR data/control, PWM output, UART TX"
+TC-15,Firmware Completion and Watchdog/Timeout Handling,Verify firmware reaches its terminal PASS condition and simulation does not hang indefinitely.,"• Execute the configured 50 sample iterations;
+• check periodic telemetry every 10 iterations;
+• detect final PASS marker;
+• verify watchdog bound (500,000 cycles) is effective;
+• exercise or observe a supported timeout/error path where feasible.",Not Run,Firmware reports the 50-iteration completion marker and terminates normally within the global simulation bound.,Not Run,Testbench detects terminal PASS; missing completion triggers bounded watchdog failure rather than an indefinite simulation.,No,Yes,"UART TX (if used),"
+TC-17,Full SoC Regression and End-to-End Sign-Off,Run all unit-level IP/bus tests followed by the integrated SoC firmware test to validate the complete design.,"• Run all 11 documented unit testbenches;
+• run tb_soc_top with sw/main.hex;
+• retain VCS logs and waveform evidence;
+• confirm each test reports PASS or a documented failure;
+• check no unexpected X/Z, fatal error or timeout.",Not Run,All required firmware-level checks pass and the complete application reaches its terminal success marker.,Not Run,"All applicable unit tests and full SoC integration test pass; no unexplained protocol errors, X-propagation or watchdog timeout.",No,Yes,"UART TX, I2C SCL/SDA, GPIO pins, PWM output,"

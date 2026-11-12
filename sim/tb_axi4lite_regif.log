@@ -1,0 +1,21 @@
+Command: /home/student/Documents/Honours_project-akshay/Honours_project/sim/./simv_tb_axi4lite_regif -l tb_axi4lite_regif.log
+Chronologic VCS simulator copyright 1991-2023
+Contains Synopsys proprietary information.
+Compiler version U-2023.03_Full64; Runtime version U-2023.03_Full64;  Oct 31 14:09 2026
+=== [TEST] tb_axi4lite_regif START ===
+[Test 1] Simultaneous AW+W write
+[Test 2] Basic read
+[Test 3] AW before W
+[Test 4] W before AW
+[Test 5] Backpressure on B channel
+[Test 6] Backpressure on R channel
+[Test 7] Partial strobe WSTRB != 4'hF returns SLVERR
+[Test 8] IP signalled reg_err returns SLVERR
+[Test 9] Simultaneous Read and Write
+=== [TEST] tb_axi4lite_regif: PASS ===
+$finish called from file "../tb/unit/tb_axi4lite_regif.sv", line 258.
+$finish at simulation time              2410000
+           V C S   S i m u l a t i o n   R e p o r t 
+Time: 2410000 ps
+CPU Time:      0.130 seconds;       Data structure size:   0.2Mb
+Sat Oct 31 14:09:25 2026
